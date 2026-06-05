@@ -1,0 +1,43 @@
+name: Build
+
+on:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    env:
+      SYSTEMC_HOME: ${{ github.workspace }}/systemc-install
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache SystemC
+        id: cache-systemc
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/systemc-install
+          key: systemc-2.3.4
+
+      - name: Build and install SystemC
+        if: steps.cache-systemc.outputs.cache-hit != 'true'
+        run: |
+          wget -q https://github.com/accellera-official/systemc/archive/refs/tags/2.3.4.tar.gz -O systemc.tar.gz
+          tar -xzf systemc.tar.gz
+          cd systemc-2.3.4
+          mkdir build && cd build
+          cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/systemc-install \
+                -DCMAKE_BUILD_TYPE=Release ..
+          make -j$(nproc)
+          make install
+
+      - name: Configure
+        run: cmake -S . -B build
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Run
+        run: ./build/sim
