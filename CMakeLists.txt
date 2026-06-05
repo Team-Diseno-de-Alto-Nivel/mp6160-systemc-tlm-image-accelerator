@@ -21,9 +21,11 @@ else()
     include(FetchContent)
     set(DISABLE_ASYNC_UPDATES    ON  CACHE INTERNAL "")
     set(BUILD_SOURCE_DOCUMENTATION OFF CACHE INTERNAL "")
+    set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard" FORCE)
     FetchContent_Declare(
         SystemC
         URL https://github.com/accellera-official/systemc/archive/refs/tags/2.3.4.tar.gz
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
     )
     FetchContent_MakeAvailable(SystemC)
     add_executable(sim src/main.cpp)

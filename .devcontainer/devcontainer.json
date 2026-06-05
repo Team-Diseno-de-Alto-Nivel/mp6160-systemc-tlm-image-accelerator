@@ -1,0 +1,23 @@
+{
+    "name": "SystemC TLM Image Accelerator",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": ".."
+    },
+    "initializeCommand": "mkdir -p ${localEnv:HOME}/.claude",
+    "mounts": [
+        "source=${localEnv:HOME}/.claude,target=/root/.claude,type=bind,consistency=cached"
+    ],
+    "postCreateCommand": "make clean && make",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.cpptools",
+                "ms-vscode.cmake-tools"
+            ],
+            "settings": {
+                "cmake.buildDirectory": "${workspaceFolder}/build"
+            }
+        }
+    }
+}

@@ -243,6 +243,34 @@ Once implemented, this section will include:
 
 ---
 
+## Development Container
+
+The repository ships a ready-to-use dev container that pre-installs all dependencies (including a compiled SystemC 2.3.4) so every team member gets an identical Linux build environment regardless of their host OS.
+
+### VS Code (recommended)
+
+1. Install the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode.remote-containers) extension (`ms-vscode.remote-containers`)
+2. Open the repository in VS Code
+3. When prompted, click **Reopen in Container** (or run the command `Dev Containers: Reopen in Container`)
+4. The container builds once (~3–5 min on first run), then `make` runs automatically to verify the setup
+
+The following extensions are pre-installed inside the container:
+- **C/C++** (`ms-vscode.cpptools`) — IntelliSense, debugging
+- **CMake Tools** (`ms-vscode.cmake-tools`) — build integration
+
+### Docker CLI (without VS Code)
+
+```bash
+docker build -t systemc-tlm .devcontainer/
+docker run -it --rm -v $(pwd):/workspace -w /workspace systemc-tlm make run
+```
+
+### GitHub Codespaces
+
+The same `devcontainer.json` works on [GitHub Codespaces](https://github.com/features/codespaces) — click **Code → Codespaces → Create codespace** for a cloud-hosted environment with no local install required.
+
+---
+
 ## CI / CD
 
 Every pull request triggers a GitHub Actions workflow ([build.yml](.github/workflows/build.yml)) that builds SystemC (cached), compiles the project, and runs `./build/sim`. To enforce this on `master`, enable branch protection and require the `build` check to pass before merging.
@@ -252,6 +280,9 @@ Every pull request triggers a GitHub Actions workflow ([build.yml](.github/workf
 ## AI-Assisted Development
 
 Declared as required by course policy — see [docs/Enunciado.md](docs/Enunciado.md).
+
+> **Using Claude Code?** Run `/log-ai` in any Claude Code session inside this repo to append a row to the table below automatically. The command asks for model, type of use, and prompt description.
+
 
 | Model | Type of use | Prompt |
 |---|---|---|
