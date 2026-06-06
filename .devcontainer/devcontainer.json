@@ -4,16 +4,17 @@
         "dockerfile": "Dockerfile",
         "context": ".."
     },
-    "initializeCommand": "mkdir -p ${localEnv:HOME}/.claude",
-    "mounts": [
-        "source=${localEnv:HOME}/.claude,target=/root/.claude,type=bind,consistency=cached"
-    ],
     "postCreateCommand": "make clean && make",
     "customizations": {
         "vscode": {
             "extensions": [
+                "GitHub.vscode-github-actions",
+                "GitHub.copilot",
+                "GitHub.copilot-chat",
                 "ms-vscode.cpptools",
-                "ms-vscode.cmake-tools"
+                "ms-vscode.cpptools-extension-pack",
+                "ms-vscode.cmake-tools",
+                "ms-vscode.makefile-tools"
             ],
             "settings": {
                 "cmake.buildDirectory": "${workspaceFolder}/build"
