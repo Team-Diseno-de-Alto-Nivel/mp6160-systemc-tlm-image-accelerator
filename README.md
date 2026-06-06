@@ -59,40 +59,37 @@ make run
 .
 ├── .github/
 │   └── workflows/
-│       └── build.yml        # CI: compiles and runs on every pull request
+│       └── build.yml              # CI: compiles and runs on every pull request
 ├── docs/
-│   └── Enunciado.md         # Assignment specification (Spanish)
+│   ├── CrearModuloSystemC.md      # Step-by-step guide for implementing a new module
+│   └── Enunciado.md               # Assignment specification (Spanish)
 ├── images/
-│   ├── input/               # Input RAW RGB images (place here before running)
-│   └── output/              # Grayscale output images (written here by sim)
+│   ├── input/                     # Input RAW RGB images (place here before running)
+│   └── output/                    # Grayscale output images (written here by sim)
 ├── src/
-│   └── main.cpp             # sc_main — top-level instantiation and sc_start()
-├── CMakeLists.txt           # Build system; auto-fetches SystemC if needed
-├── Makefile                 # Thin CMake wrapper
-├── CLAUDE.md                # Context file for Claude Code
+│   ├── accelerator/
+│   │   ├── accelerator.h
+│   │   └── accelerator.cpp
+│   ├── bus/
+│   │   ├── bus.h
+│   │   └── bus.cpp
+│   ├── cpu/
+│   │   ├── cpu.h
+│   │   └── cpu.cpp
+│   ├── disk/
+│   │   ├── disk.h
+│   │   └── disk.cpp
+│   ├── ram/
+│   │   ├── ram.h
+│   │   └── ram.cpp
+│   ├── utils/
+│   │   └── conversion.h           # Pure BT.601 helper (no SystemC dependency)
+│   └── main.cpp                   # sc_main — top-level instantiation and sc_start()
+├── AGENTS.md                      # AI assistant instructions
+├── CMakeLists.txt                 # Build system; auto-fetches SystemC if needed
+├── CLAUDE.md                      # Context file for Claude Code
+├── Makefile                       # Thin CMake wrapper
 └── README.md
-```
-
-As modules are implemented they will be added under `src/<module>/`:
-
-```
-src/
-├── cpu/
-│   ├── cpu.h
-│   └── cpu.cpp
-├── ram/
-│   ├── ram.h
-│   └── ram.cpp
-├── disk/
-│   ├── disk.h
-│   └── disk.cpp
-├── accelerator/
-│   ├── accelerator.h
-│   └── accelerator.cpp
-├── bus/
-│   ├── bus.h
-│   └── bus.cpp
-└── main.cpp
 ```
 
 ---
@@ -151,6 +148,28 @@ graph LR
     Bus <-->|TLM 2.0| Accelerator
     Bus <-->|TLM 2.0| Disk
 ```
+
+---
+
+## Accelerator Grayscale Conversion
+
+The Accelerator converts RGB images to grayscale using the **BT.601 luminosity formula**:
+
+```
+Gray = 0.299 × R + 0.587 × G + 0.114 × B
+```
+
+**Input:** 3 bytes per pixel (RGB, values 0–255)  
+**Output:** 1 byte per pixel (Grayscale, 0–255, rounded)
+
+This formula reflects human eye sensitivity to different colors:
+- Green (58.7%): highest sensitivity
+- Red (29.9%): medium sensitivity
+- Blue (11.4%): lowest sensitivity
+
+**Example:** RGB(100, 150, 200) → 0.299×100 + 0.587×150 + 0.114×200 = 140.75 ≈ 141 (grayscale)
+
+See [Roboflow Image Convert Grayscale](https://inference.roboflow.com/workflows/blocks/image_convert_grayscale/) for reference.
 
 ---
 
@@ -236,10 +255,39 @@ RAM total capacity: 64 MB (`0x00000000` – `0x03FFFFFF`).
 
 > Not yet available — the system is under development.
 
-Once implemented, this section will include:
-- Side-by-side comparison of the input RGB image and the output grayscale image.
-- Simulation output log from `./build/sim`.
-- Observed SystemC simulation time.
+### Output image
+
+<!-- Side-by-side comparison of the input RGB image and the output grayscale image. -->
+
+### Simulation log
+
+<!-- Paste the full output of ./build/sim here showing the 6-step flow:
+     load from Disk → store in RAM → configure Accelerator → process → fetch from RAM → save to Disk -->
+
+### Discussion
+
+**1. Is the output image visually correct?**
+
+<!-- Compare the grayscale output with the RGB input. Describe what you observe. -->
+
+**2. Conversion correctness**
+
+<!-- Pick a known pixel from the input (e.g. RGB(100, 150, 200)) and verify the grayscale value
+     at the same position matches the BT.601 formula: 0.299×R + 0.587×G + 0.114×B. -->
+
+**3. Simulation flow**
+
+<!-- Does the log show the 6 steps in the correct order? Describe any deviations. -->
+
+**4. Simulation time**
+
+<!-- What time did SystemC report at sc_time_stamp() when the simulation finished?
+     Does it reflect the real execution time? Why or why not? -->
+
+**5. Data volume**
+
+<!-- How many bytes did the system transfer in total (input 6,220,800 B + output 2,073,600 B)?
+     Does it match what is expected for a 1920×1080 image? -->
 
 ---
 
@@ -287,3 +335,4 @@ Declared as required by course policy — see [docs/Enunciado.md](docs/Enunciado
 | Model | Type of use | Prompt |
 |---|---|---|
 | Claude Sonnet 4.6 ([Claude Code](https://claude.ai/code)) | Concept lookup, code generation, documentation generation, diagram generation | *"Create the base repo: readme, gitignore, C++ SystemC template, makefile, cmake with auto-fetch of SystemC, and CI/CD pipeline for PRs. Generate a complete README with all sections required by the assignment spec; include Mermaid diagrams (block, sequence), transaction format, and memory map as base templates to be updated once the system is implemented."* |
+| Claude Sonnet 4.6 ([Claude Code](https://claude.ai/code)) | Documentation generation, code generation | *"Create docs/CrearModuloSystemC.md: a step-by-step guide for implementing a SystemC/TLM module in this project, using the Accelerator as a reference example. Covers header, cpp, conversion.h, CMakeLists, main.cpp wiring, memory map, and config format documentation."* |

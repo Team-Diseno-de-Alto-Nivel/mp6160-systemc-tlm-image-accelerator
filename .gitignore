@@ -21,6 +21,7 @@ _deps/
 .AppleDouble
 
 # Editor
-.vscode/
+.vscode/*
+!.vscode/c_cpp_properties.json
 *.swp
 *~
