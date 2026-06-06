@@ -16,21 +16,21 @@ void CPU::run() {
     std::vector<uint8_t> input_image(INPUT_IMAGE_BYTES);
     std::vector<uint8_t> output_image(OUTPUT_IMAGE_BYTES);
 
-    // 1) Leer imagen RAW RGB desde el disco
+    // Read RGB RAW image from the disk
     load_image_from_disk(input_image);
 
-    // 2) Almacenar imagen en RAM
+    // Store image in RAM
     store_image_to_ram(input_image);
 
-    // 3) Configurar acelerador
+    // Configure accelerator
     configure_accelerator(ram_base_addr + INPUT_IMAGE_RAM_ADDR,
                           ram_base_addr + OUTPUT_IMAGE_RAM_ADDR,
                           PIXEL_COUNT);
 
-    // 4) Leer la imagen procesada desde RAM
+    // Read the processed image from RAM
     read_result_from_ram(output_image);
 
-    // 5) Guardar resultado en disco
+    // Save result to disk
     save_result_to_disk(output_image);
 
     sc_core::sc_stop();
