@@ -16,7 +16,9 @@ if(DEFINED ENV{SYSTEMC_HOME})
         NAMES systemc
         PATHS ${SYSTEMC_HOME}/lib ${SYSTEMC_HOME}/lib-linux64 ${SYSTEMC_HOME}/lib-macosx64
         REQUIRED)
-    set(SYSTEMC_TARGET ${SYSTEMC_LIB})
+    file(GLOB_RECURSE SOURCES src/*.cpp src/*/*.cpp)
+    add_executable(sim ${SOURCES})
+    target_link_libraries(sim ${SYSTEMC_LIB})
 else()
     message(STATUS "SYSTEMC_HOME not set — downloading SystemC 2.3.4 via FetchContent (requires internet)")
     set(DISABLE_ASYNC_UPDATES     ON  CACHE INTERNAL "")
@@ -28,7 +30,9 @@ else()
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
     )
     FetchContent_MakeAvailable(SystemC)
-    set(SYSTEMC_TARGET SystemC::systemc)
+    file(GLOB_RECURSE SOURCES src/*.cpp src/*/*.cpp)
+    add_executable(sim ${SOURCES})
+    target_link_libraries(sim SystemC::systemc)
 endif()
 
 # ── Main simulation executable ────────────────────────────────────────────────
