@@ -7,14 +7,14 @@
 
 class CPU : public sc_core::sc_module {
 public:
-    tlm_utils::simple_initiator_socket<CPU> socket;
+    tlm_utils::simple_initiator_socket<CPU> init_socket;
 
     SC_HAS_PROCESS(CPU);
 
     CPU(sc_core::sc_module_name name,
-        uint64_t disk_base_addr = 0x80000000ULL,
+        uint64_t disk_base_addr = 0x20000000ULL,
         uint64_t ram_base_addr = 0x00000000ULL,
-        uint64_t accel_base_addr = 0x90000000ULL);
+        uint64_t accel_base_addr = 0x10000000ULL);
 
 private:
     void run();

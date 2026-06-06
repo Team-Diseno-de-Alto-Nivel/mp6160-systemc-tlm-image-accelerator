@@ -5,7 +5,7 @@ CPU::CPU(sc_core::sc_module_name name,
          uint64_t ram_base_addr,
          uint64_t accel_base_addr)
     : sc_core::sc_module(name)
-    , socket("socket")
+    , init_socket("init_socket")
     , disk_base_addr(disk_base_addr)
     , ram_base_addr(ram_base_addr)
     , accel_base_addr(accel_base_addr) {
@@ -49,7 +49,7 @@ void CPU::transport(uint64_t addr, unsigned char* data, unsigned int size, tlm::
     trans.set_dmi_allowed(false);
     trans.set_response_status(tlm::TLM_INCOMPLETE_RESPONSE);
 
-    socket->b_transport(trans, delay);
+    init_socket->b_transport(trans, delay);
 
     if (trans.is_response_error()) {
         SC_REPORT_ERROR("CPU", "TLM transaction returned error response");
