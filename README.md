@@ -32,7 +32,7 @@ xcode-select --install       # provides clang and make
 brew install cmake git
 ```
 
-### Build
+### Local Build
 
 ```bash
 git clone <repository-url>
@@ -50,6 +50,36 @@ If SystemC is already installed, set `$SYSTEMC_HOME` before running `make` to sk
 export SYSTEMC_HOME=/opt/systemc   # adjust to your install path
 make run
 ```
+
+### Development Container
+
+The repository ships a ready-to-use dev container that pre-installs all dependencies (including a compiled SystemC 2.3.4) so every team member gets an identical Linux build environment regardless of their host OS. This is the recommended alternative to a local build.
+
+#### VS Code (recommended)
+
+1. Install the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode.remote-containers) extension (`ms-vscode.remote-containers`)
+2. Open the repository in VS Code
+3. When prompted, click **Reopen in Container** (or run the command `Dev Containers: Reopen in Container`)
+4. The container builds once (~3–5 min on first run), then `make` runs automatically to verify the setup
+
+The following extensions are pre-installed inside the container:
+- **C/C++** (`ms-vscode.cpptools`) — IntelliSense, debugging
+- **CMake Tools** (`ms-vscode.cmake-tools`) — build integration
+
+#### Docker CLI (without VS Code)
+
+```bash
+docker build -t systemc-tlm .devcontainer/
+docker run -it --rm -v $(pwd):/workspace -w /workspace systemc-tlm make run
+```
+
+#### GitHub Codespaces
+
+The same `devcontainer.json` works on [GitHub Codespaces](https://github.com/features/codespaces) — click **Code → Codespaces → Create codespace** for a cloud-hosted environment with no local install required.
+
+### CI / CD
+
+Every pull request triggers a GitHub Actions workflow ([build.yml](.github/workflows/build.yml)) that builds SystemC (cached), compiles the project, and runs `./build/sim`. To enforce this on `master`, enable branch protection and require the `build` check to pass before merging.
 
 ---
 
@@ -149,11 +179,25 @@ graph LR
     Bus <-->|TLM 2.0| Disk
 ```
 
----
+### CPU
 
-## Accelerator Grayscale Conversion
+The CPU orchestrates the entire processing pipeline. It initiates all TLM transactions: loading the raw image from Disk into RAM, configuring the Accelerator with the source address, destination address, and pixel count, then fetching the processed image back from RAM and saving it to Disk. The CPU holds no image data locally — RAM is the only intermediate buffer.
 
-The Accelerator converts RGB images to grayscale using the **BT.601 luminosity formula**:
+### Bus
+
+The Bus acts as both TLM target (receiving transactions from the CPU and Accelerator) and TLM initiator (forwarding them to the correct peripheral). It decodes the transaction address and routes it to RAM (`0x00000000`–`0x03FFFFFF`), Accelerator (`0x10000000`), or Disk (`0x20000000`). All inter-module communication passes through the Bus.
+
+### RAM
+
+A 64 MB byte-addressable memory array. It holds the input RGB image starting at `0x00000000` and the output grayscale image starting at `0x00600000`. All inter-module data exchange passes through RAM — neither the CPU nor the Accelerator transfer image data directly to each other.
+
+### Disk
+
+Models the persistent file system as a SystemC module. A TLM READ transaction causes it to open the specified image file and return its bytes; a TLM WRITE transaction creates or overwrites a file with the provided data. It is the only module that performs actual filesystem I/O, keeping the rest of the system independent of the host OS.
+
+### Accelerator
+
+On receiving a 24-byte WRITE to its configuration register at `0x10000000`, the Accelerator reads the source RGB pixels from RAM, converts each pixel to grayscale, and writes the result back to RAM at the destination address. It uses the **BT.601 luminosity formula**:
 
 ```
 Gray = 0.299 × R + 0.587 × G + 0.114 × B
@@ -162,7 +206,7 @@ Gray = 0.299 × R + 0.587 × G + 0.114 × B
 **Input:** 3 bytes per pixel (RGB, values 0–255)  
 **Output:** 1 byte per pixel (Grayscale, 0–255, rounded)
 
-This formula reflects human eye sensitivity to different colors:
+This formula reflects human eye sensitivity to different color channels:
 - Green (58.7%): highest sensitivity
 - Red (29.9%): medium sensitivity
 - Blue (11.4%): lowest sensitivity
@@ -288,40 +332,6 @@ RAM total capacity: 64 MB (`0x00000000` – `0x03FFFFFF`).
 
 <!-- How many bytes did the system transfer in total (input 6,220,800 B + output 2,073,600 B)?
      Does it match what is expected for a 1920×1080 image? -->
-
----
-
-## Development Container
-
-The repository ships a ready-to-use dev container that pre-installs all dependencies (including a compiled SystemC 2.3.4) so every team member gets an identical Linux build environment regardless of their host OS.
-
-### VS Code (recommended)
-
-1. Install the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode.remote-containers) extension (`ms-vscode.remote-containers`)
-2. Open the repository in VS Code
-3. When prompted, click **Reopen in Container** (or run the command `Dev Containers: Reopen in Container`)
-4. The container builds once (~3–5 min on first run), then `make` runs automatically to verify the setup
-
-The following extensions are pre-installed inside the container:
-- **C/C++** (`ms-vscode.cpptools`) — IntelliSense, debugging
-- **CMake Tools** (`ms-vscode.cmake-tools`) — build integration
-
-### Docker CLI (without VS Code)
-
-```bash
-docker build -t systemc-tlm .devcontainer/
-docker run -it --rm -v $(pwd):/workspace -w /workspace systemc-tlm make run
-```
-
-### GitHub Codespaces
-
-The same `devcontainer.json` works on [GitHub Codespaces](https://github.com/features/codespaces) — click **Code → Codespaces → Create codespace** for a cloud-hosted environment with no local install required.
-
----
-
-## CI / CD
-
-Every pull request triggers a GitHub Actions workflow ([build.yml](.github/workflows/build.yml)) that builds SystemC (cached), compiles the project, and runs `./build/sim`. To enforce this on `master`, enable branch protection and require the `build` check to pass before merging.
 
 ---
 
