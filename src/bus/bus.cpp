@@ -14,5 +14,6 @@ void Bus::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& delay
 }
 
 void Bus::b_transport_accel(tlm::tlm_generic_payload& payload, sc_core::sc_time& delay) {
+    // Comentario
     // TODO: route Accelerator→RAM requests
 }
