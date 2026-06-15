@@ -29,7 +29,7 @@ void Bus::b_transport(
         );
         std::cout << "[BUS] <- RAM" << std::endl;
     }
-    else if (addr == ACCEL_BASE)
+    else if (addr >= ACCEL_BASE && addr <= ACCEL_END)
     {
         std::cout << "[BUS] -> Accelerator" << std::endl;
         init_socket_accel->b_transport(
