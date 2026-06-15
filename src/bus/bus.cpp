@@ -1,4 +1,5 @@
 #include "bus.h"
+#include "../utils/memory_map.h"
 
 Bus::Bus(sc_core::sc_module_name name)
     : sc_module(name) {
@@ -19,7 +20,7 @@ void Bus::b_transport(
         << std::dec
         << std::endl;
 
-    if (addr <= 0x03FFFFFFULL)
+    if (addr <= RAM_END)
     {
         std::cout << "[BUS] -> RAM" << std::endl;
         init_socket_ram->b_transport(
@@ -28,7 +29,7 @@ void Bus::b_transport(
         );
         std::cout << "[BUS] <- RAM" << std::endl;
     }
-    else if (addr == 0x10000000ULL)
+    else if (addr == ACCEL_BASE)
     {
         std::cout << "[BUS] -> Accelerator" << std::endl;
         init_socket_accel->b_transport(
@@ -37,7 +38,7 @@ void Bus::b_transport(
         );
         std::cout << "[BUS] <- Accelerator" << std::endl;
     }
-    else if (addr >= 0x20000000ULL && addr < 0x30000000ULL)
+    else if (addr >= DISK_BASE && addr <= DISK_END)
     {
         std::cout << "[BUS] -> Disk" << std::endl;
         init_socket_disk->b_transport(
@@ -72,7 +73,7 @@ void Bus::b_transport_accel(
         << std::dec
         << std::endl;
 
-    if (addr <= 0x03FFFFFFULL)
+    if (addr <= RAM_END)
     {
         init_socket_ram->b_transport(
             payload,
