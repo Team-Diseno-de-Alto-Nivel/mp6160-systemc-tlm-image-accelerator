@@ -27,6 +27,9 @@ void CPU::run() {
                           ram_base_addr + OUTPUT_IMAGE_RAM_ADDR,
                           PIXEL_COUNT);
 
+    // Wait for accelerator to finish
+    wait_accelerator_ready();
+
     // Read the processed image from RAM
     read_result_from_ram(output_image);
 
@@ -80,6 +83,22 @@ void CPU::configure_accelerator(uint64_t src_addr, uint64_t dst_addr, uint64_t p
               reinterpret_cast<unsigned char*>(config),
               static_cast<unsigned int>(sizeof(config)),
               tlm::TLM_WRITE_COMMAND);
+}
+
+void CPU::wait_accelerator_ready() {
+    uint32_t status = 0;
+    const sc_core::sc_time poll_interval = sc_core::sc_time(100, sc_core::SC_NS);
+
+    while (status == 0) {
+        transport(accel_base_addr + ACCEL_STATUS_ADDR,
+                  reinterpret_cast<unsigned char*>(&status),
+                  sizeof(uint32_t),
+                  tlm::TLM_READ_COMMAND);
+
+        if (status == 0) {
+            sc_core::wait(poll_interval);
+        }
+    }
 }
 
 void CPU::read_result_from_ram(std::vector<uint8_t>& buffer) {
