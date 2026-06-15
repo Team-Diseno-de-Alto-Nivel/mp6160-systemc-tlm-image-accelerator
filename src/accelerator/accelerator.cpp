@@ -3,9 +3,9 @@
 #include <cstdio>
 
 Accelerator::Accelerator(sc_core::sc_module_name name)
-    : sc_module(name) {
-    target_socket.register_b_transport(this, &Accelerator::b_transport);
-}
+     : sc_module(name) {
+     target_socket.register_b_transport(this, &Accelerator::b_transport);
+ }
 
 uint8_t Accelerator::rgb_to_gray(uint8_t r, uint8_t g, uint8_t b) {
     return ::rgb_to_gray(r, g, b);
@@ -76,3 +76,18 @@ void Accelerator::process_image(uint64_t src_addr, uint64_t dst_addr, uint64_t p
     }
     SC_REPORT_INFO(name(), "Procesamiento completo");
 }
+
+
+
+// *** Esto de abajo es una prueba del bus, debería poder ser eliminada o comentada sin afectar el principal -JesúsC
+// void Accelerator::b_transport(
+//     tlm::tlm_generic_payload& payload,
+//     sc_core::sc_time& delay)
+// {
+//     std::cout
+//         << "[ACCEL] Transaccion recibida"
+//         << std::endl;
+
+//     payload.set_response_status(
+//         tlm::TLM_OK_RESPONSE);
+// }
