@@ -1,9 +1,6 @@
 #pragma once
 #include <cstdint>
 
-// Mapa de memoria del bus. Todos los modulos deben importar este header
-// en lugar de hardcodear direcciones, para mantener consistencia.
-
 constexpr uint64_t RAM_BASE     = 0x00000000ULL; // inicio de RAM (64 MB)
 constexpr uint64_t RAM_END      = 0x03FFFFFFULL; // fin de RAM
 constexpr uint64_t RAM_IMG_IN   = 0x00000000ULL; // imagen RGB de entrada (~5.9 MB)

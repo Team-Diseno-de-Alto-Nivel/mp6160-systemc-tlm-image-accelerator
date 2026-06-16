@@ -122,18 +122,3 @@ void Accelerator::process_image(uint64_t src_addr, uint64_t dst_addr, uint64_t p
     SC_REPORT_INFO("Accelerator", "Processing complete");
     write_status_register(1);
 }
-
-
-
-// *** Esto de abajo es una prueba del bus, debería poder ser eliminada o comentada sin afectar el principal -JesúsC
-// void Accelerator::b_transport(
-//     tlm::tlm_generic_payload& payload,
-//     sc_core::sc_time& delay)
-// {
-//     std::cout
-//         << "[ACCEL] Transaccion recibida"
-//         << std::endl;
-
-//     payload.set_response_status(
-//         tlm::TLM_OK_RESPONSE);
-// }

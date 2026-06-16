@@ -16,10 +16,6 @@ public:
     SC_CTOR(Accelerator);
 
 private:
-    // Config transaction: WRITE de 24 bytes al address 0x10000000
-    // Offset  +0 (8 B): src_addr    — dirección base input RGB en RAM
-    // Offset  +8 (8 B): dst_addr    — dirección base output grayscale en RAM
-    // Offset +16 (8 B): pixel_count — total de píxeles a procesar
     void b_transport(tlm::tlm_generic_payload & payload, sc_core::sc_time & delay);
     void process_image(uint64_t src_addr, uint64_t dst_addr, uint64_t pixel_count);
     void write_status_register(uint32_t status);
