@@ -38,21 +38,8 @@ jobs:
       - name: Install Python dependencies
         run: pip install Pillow numpy
 
-      - name: Generate test input image (JPG)
-        run: |
-          mkdir -p images/input
-          python -c "
-          import numpy as np
-          from PIL import Image
-          arr = np.zeros((1080, 1920, 3), dtype='uint8')
-          arr[:, :, 0] = np.linspace(0, 255, 1920, dtype='uint8')
-          arr[:, :, 1] = np.linspace(0, 255, 1080, dtype='uint8')[:, None]
-          arr[:, :, 2] = 128
-          Image.fromarray(arr).save('images/input/test.jpg')
-          "
-
-      - name: Convert JPG → RAW (simulation input)
-        run: python scripts/jpg_to_raw.py images/input/test.jpg images/input/imagen.raw
+      - name: Prepare simulation input (use existing image or generate one)
+        run: python scripts/prepare_input.py
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
