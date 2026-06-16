@@ -4,12 +4,55 @@ on:
   pull_request:
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      src: ${{ steps.filter.outputs.src }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            src:
+              - 'src/**'
+              - 'CMakeLists.txt'
+              - 'Makefile'
+              - '.devcontainer/**'
+              - 'scripts/**'
+
   build:
+    needs: changes
+    if: needs.changes.outputs.src == 'true'
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install Python dependencies
+        run: pip install Pillow numpy
+
+      - name: Generate test input image (JPG)
+        run: |
+          mkdir -p images/input
+          python -c "
+          import numpy as np
+          from PIL import Image
+          arr = np.zeros((1080, 1920, 3), dtype='uint8')
+          arr[:, :, 0] = np.linspace(0, 255, 1920, dtype='uint8')
+          arr[:, :, 1] = np.linspace(0, 255, 1080, dtype='uint8')[:, None]
+          arr[:, :, 2] = 128
+          Image.fromarray(arr).save('images/input/test.jpg')
+          "
+
+      - name: Convert JPG → RAW (simulation input)
+        run: python scripts/jpg_to_raw.py images/input/test.jpg images/input/imagen.raw
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -31,3 +74,15 @@ jobs:
             -w /workspace \
             systemc-tlm:ci \
             make run
+
+      - name: Convert RAW output → JPG
+        run: python scripts/raw_to_jpg.py images/output/salida.raw images/output/salida.jpg --gray
+
+      - name: Upload images
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simulation-images
+          path: |
+            images/input/test.jpg
+            images/output/salida.jpg
