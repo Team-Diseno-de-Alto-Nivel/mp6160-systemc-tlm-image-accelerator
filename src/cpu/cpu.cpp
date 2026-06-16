@@ -1,4 +1,5 @@
 #include "cpu.h"
+#include "../utils/logger.h"
 
 CPU::CPU(sc_core::sc_module_name name,
          uint64_t disk_base_addr,
@@ -16,24 +17,22 @@ void CPU::run() {
     std::vector<uint8_t> input_image(INPUT_IMAGE_BYTES);
     std::vector<uint8_t> output_image(OUTPUT_IMAGE_BYTES);
 
-    // Read RGB RAW image from the disk
+    Logger::phase(1, 5, "Loading image from disk");
     load_image_from_disk(input_image);
 
-    // Store image in RAM
+    Logger::phase(2, 5, "Storing image in RAM");
     store_image_to_ram(input_image);
 
-    // Configure accelerator
+    Logger::phase(3, 5, "Configuring accelerator");
     configure_accelerator(ram_base_addr + INPUT_IMAGE_RAM_ADDR,
                           ram_base_addr + OUTPUT_IMAGE_RAM_ADDR,
                           PIXEL_COUNT);
 
-    // Wait for accelerator to finish
+    Logger::phase(4, 5, "Processing image");
     wait_accelerator_ready();
 
-    // Read the processed image from RAM
+    Logger::phase(5, 5, "Saving result to disk");
     read_result_from_ram(output_image);
-
-    // Save result to disk
     save_result_to_disk(output_image);
 
     sc_core::sc_stop();

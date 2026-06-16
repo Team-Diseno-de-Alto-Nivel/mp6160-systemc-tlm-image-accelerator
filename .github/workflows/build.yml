@@ -64,7 +64,7 @@ jobs:
             make run
 
       - name: Convert RAW output → JPG
-        run: python scripts/raw_to_jpg.py images/output/salida.raw images/output/salida.jpg --gray
+        run: python scripts/raw_to_jpg.py images/output/output.raw images/output/output.jpg --gray
 
       - name: Upload images
         if: always()
