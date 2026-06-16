@@ -297,11 +297,13 @@ RAM total capacity: 64 MB (`0x00000000` – `0x03FFFFFF`).
 
 ## Results
 
-> Not yet available — the system is under development.
+> Images are generated automatically by CI on every push to `main` that touches `src/` or the input image.
 
 ### Output image
 
-<!-- Side-by-side comparison of the input RGB image and the output grayscale image. -->
+| Input (RGB) | Output (Grayscale) |
+|:-----------:|:------------------:|
+| ![Input RGB](https://github.com/Team-Diseno-de-Alto-Nivel/mp6160-systemc-tlm-image-accelerator/releases/download/simulation-results/imagen.jpg) | ![Output Grayscale](https://github.com/Team-Diseno-de-Alto-Nivel/mp6160-systemc-tlm-image-accelerator/releases/download/simulation-results/salida.jpg) |
 
 ### Simulation log
 
