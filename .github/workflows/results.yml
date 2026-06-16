@@ -54,7 +54,7 @@ jobs:
             make run
 
       - name: Convert RAW output → JPG
-        run: python scripts/raw_to_jpg.py images/output/salida.raw images/output/salida.jpg --gray
+        run: python scripts/raw_to_jpg.py images/output/output.raw images/output/output.jpg --gray
 
       - name: Publish results as GitHub Release
         env:
@@ -65,5 +65,5 @@ jobs:
             --title "Simulation Results" \
             --notes "Auto-updated by CI on every push to main that touches src/." \
             --latest=false \
-            images/input/imagen.jpg#"Input RGB (1920×1080)" \
-            images/output/salida.jpg#"Output Grayscale (1920×1080)"
+            images/input/image.jpg#"Input RGB (1920×1080)" \
+            images/output/output.jpg#"Output Grayscale (1920×1080)"

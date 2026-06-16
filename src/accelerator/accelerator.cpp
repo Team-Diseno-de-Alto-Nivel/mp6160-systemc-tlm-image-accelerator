@@ -1,6 +1,6 @@
 #include "accelerator.h"
 #include "../utils/conversion.h"
-#include <cstdio>
+#include "../utils/logger.h"
 #include <iomanip>
 #include <sstream>
 
@@ -80,20 +80,15 @@ void Accelerator::write_status_register(uint32_t status) {
     sc_core::sc_time delay = sc_core::sc_time(10, sc_core::SC_NS);
     init_socket->b_transport(write_payload, delay);
 
-    std::ostringstream oss;
-    oss << "Status register written: 0x" << std::hex << std::setfill('0') << std::setw(8) << status;
-    SC_REPORT_INFO("Accelerator", oss.str().c_str());
 }
 
 void Accelerator::process_image(uint64_t src_addr, uint64_t dst_addr, uint64_t pixel_count) {
-    SC_REPORT_INFO("Accelerator", "Processing started");
-    const uint64_t step = (pixel_count >= 10) ? (pixel_count / 10) : 0;
+    const uint64_t report_every = (pixel_count >= 100) ? pixel_count / 100 : 1;
+
     for (uint64_t i = 0; i < pixel_count; ++i) {
-        if (step > 0 && i > 0 && i % step == 0) {
-            std::ostringstream oss;
-            oss << "Progress: " << (i * 100 / pixel_count) << "%";
-            SC_REPORT_INFO("Accelerator", oss.str().c_str());
-        }
+        if (i % report_every == 0 || i == pixel_count - 1)
+            Logger::progress(i, pixel_count);
+
         uint64_t src_offset = src_addr + (i * 3);
         uint64_t dst_offset = dst_addr + i;
 
@@ -119,6 +114,6 @@ void Accelerator::process_image(uint64_t src_addr, uint64_t dst_addr, uint64_t p
         write_payload.set_data_length(1);
         init_socket->b_transport(write_payload, delay);
     }
-    SC_REPORT_INFO("Accelerator", "Processing complete");
+    Logger::progress_done();
     write_status_register(1);
 }

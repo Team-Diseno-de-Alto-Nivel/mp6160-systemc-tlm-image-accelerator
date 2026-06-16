@@ -14,23 +14,23 @@ int sc_main(int argc, char* argv[])
     Disk        disk("disk");
     Accelerator accelerator("accelerator");
 
-    std::cout << "*** Modulos creados ***" << std::endl;
+    std::cout << "*** Modules created ***" << std::endl;
 
-    // CPU → Bus (ruta principal del pipeline)
+    // CPU → Bus (main pipeline path)
     cpu.init_socket.bind(bus.target_socket);
 
-    // Accelerator → Bus (ruta de acceso a RAM durante el procesamiento de imagen)
+    // Accelerator → Bus (RAM access path during image processing)
     accelerator.init_socket.bind(bus.target_socket_accel);
 
-    // Bus → periféricos
+    // Bus → peripherals
     bus.init_socket_ram.bind(ram.target_socket);
     bus.init_socket_accel.bind(accelerator.target_socket);
     bus.init_socket_disk.bind(disk.target_socket);
 
-    std::cout << "*** Sockets conectados ***" << std::endl;
+    std::cout << "*** Sockets connected ***" << std::endl;
 
     sc_core::sc_start();
 
-    std::cout << "*** Simulacion completada :) ***" << std::endl;
+    std::cout << "*** Simulation complete :) ***" << std::endl;
     return 0;
 }
