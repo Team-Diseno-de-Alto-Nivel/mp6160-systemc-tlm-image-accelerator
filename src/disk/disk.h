@@ -3,6 +3,7 @@
 #include <systemc>
 #include <tlm>
 #include <tlm_utils/simple_target_socket.h>
+#include "../utils/memory_map.h"
 
 SC_MODULE(Disk) {
 public:
@@ -12,4 +13,10 @@ public:
 
 private:
     void b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& delay);
+
+    static constexpr const char* INPUT_PATH  = "images/input/imagen.raw";
+    static constexpr const char* OUTPUT_PATH = "images/output/salida.raw";
+
+    static constexpr uint64_t DISK_INPUT_ADDR  = DISK_BASE + DISK_IMG_IN;
+    static constexpr uint64_t DISK_OUTPUT_ADDR = DISK_BASE + DISK_IMG_OUT;
 };

@@ -20,6 +20,7 @@ jobs:
               - 'Makefile'
               - '.devcontainer/**'
               - 'scripts/**'
+              - '.github/workflows/**'
 
   build:
     needs: changes
