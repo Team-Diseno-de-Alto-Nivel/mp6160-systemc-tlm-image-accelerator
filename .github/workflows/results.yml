@@ -1,31 +1,21 @@
-name: Build
+name: Update results
 
 on:
-  pull_request:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'CMakeLists.txt'
+      - 'Makefile'
+      - '.devcontainer/**'
+      - 'scripts/**'
+      - 'images/input/**'
 
 jobs:
-  changes:
+  simulate:
     runs-on: ubuntu-latest
-    outputs:
-      src: ${{ steps.filter.outputs.src }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            src:
-              - 'src/**'
-              - 'CMakeLists.txt'
-              - 'Makefile'
-              - '.devcontainer/**'
-              - 'scripts/**'
-              - '.github/workflows/**'
-
-  build:
-    needs: changes
-    if: needs.changes.outputs.src == 'true'
-    runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
@@ -39,7 +29,7 @@ jobs:
       - name: Install Python dependencies
         run: pip install Pillow numpy
 
-      - name: Prepare simulation input (use existing image or generate one)
+      - name: Prepare simulation input
         run: python scripts/prepare_input.py
 
       - name: Set up Docker Buildx
@@ -66,11 +56,14 @@ jobs:
       - name: Convert RAW output → JPG
         run: python scripts/raw_to_jpg.py images/output/salida.raw images/output/salida.jpg --gray
 
-      - name: Upload images
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: simulation-images
-          path: |
-            images/input/*.jpg
-            images/output/*.jpg
+      - name: Publish results as GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete simulation-results --yes --cleanup-tag 2>/dev/null || true
+          gh release create simulation-results \
+            --title "Simulation Results" \
+            --notes "Auto-updated by CI on every push to main that touches src/." \
+            --latest=false \
+            images/input/imagen.jpg#"Input RGB (1920×1080)" \
+            images/output/salida.jpg#"Output Grayscale (1920×1080)"
