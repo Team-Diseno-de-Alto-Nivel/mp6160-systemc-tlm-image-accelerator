@@ -27,7 +27,7 @@ jobs:
       - name: Generate test input image
         run: |
           mkdir -p images/input
-          dd if=/dev/urandom of=images/input/imagen.raw bs=1 count=6220800
+          [ -f images/input/imagen.raw ] || dd if=/dev/urandom of=images/input/imagen.raw bs=1 count=6220800
 
       - name: Build and run simulation
         run: |

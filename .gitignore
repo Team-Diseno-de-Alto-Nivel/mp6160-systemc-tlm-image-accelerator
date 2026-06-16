@@ -16,6 +16,9 @@ _deps/
 *.raw
 *.bin
 
+# Allow input image for CI
+!images/input/*.raw
+
 # macOS
 .DS_Store
 .AppleDouble
