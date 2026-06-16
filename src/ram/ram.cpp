@@ -16,7 +16,7 @@ RAM::RAM(sc_core::sc_module_name name)
         this,
         &RAM::b_transport);
 
-    Logger::info("RAM", std::string("Inicializado con ") + std::to_string(RAM_SIZE / (1024 * 1024)) + " MB");
+    Logger::info("RAM", std::string("Initialized with ") + std::to_string(RAM_SIZE / (1024 * 1024)) + " MB");
 }
 
 void RAM::b_transport(
@@ -29,33 +29,30 @@ void RAM::b_transport(
     unsigned int len = payload.get_data_length();
     tlm::tlm_command cmd = payload.get_command();
 
-    // Verificar que la dirección sea válida
     if ((addr + len) > memory.size())
     {
         std::ostringstream oss;
-        oss << "Error de dirección. Addr=0x" << std::hex << addr << std::dec << " Len=" << len;
+        oss << "Address error: addr=0x" << std::hex << addr << std::dec << " len=" << len;
         Logger::info("RAM", oss.str());
 
         payload.set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
         return;
     }
 
-    // WRITE
     if (cmd == tlm::TLM_WRITE_COMMAND)
     {
         std::memcpy(&memory[addr], data, len);
 
         std::ostringstream oss;
-        oss << "ESCRITURA Addr=0x" << std::hex << addr << std::dec << " Tamaño=" << len << " bytes";
+        oss << "WRITE addr=0x" << std::hex << addr << std::dec << " len=" << len << " bytes";
         Logger::info("RAM", oss.str());
     }
-    // READ
     else if (cmd == tlm::TLM_READ_COMMAND)
     {
         std::memcpy(data, &memory[addr], len);
 
         std::ostringstream oss;
-        oss << "LECTURA Addr=0x" << std::hex << addr << std::dec << " Tamaño=" << len << " bytes";
+        oss << "READ  addr=0x" << std::hex << addr << std::dec << " len=" << len << " bytes";
         Logger::info("RAM", oss.str());
     }
     else
@@ -64,7 +61,6 @@ void RAM::b_transport(
         return;
     }
 
-    // Latencia simulada
     delay += sc_core::sc_time(10, sc_core::SC_NS);
 
     payload.set_response_status(tlm::TLM_OK_RESPONSE);
