@@ -23,6 +23,7 @@ private:
     void load_image_from_disk(std::vector<uint8_t>& buffer);
     void store_image_to_ram(const std::vector<uint8_t>& buffer);
     void configure_accelerator(uint64_t src_addr, uint64_t dst_addr, uint64_t pixel_count);
+    void wait_accelerator_ready();
     void read_result_from_ram(std::vector<uint8_t>& buffer);
     void save_result_to_disk(const std::vector<uint8_t>& buffer);
 
@@ -38,6 +39,7 @@ private:
     static constexpr uint64_t INPUT_IMAGE_RAM_ADDR = 0x00000000ULL;
     static constexpr uint64_t OUTPUT_IMAGE_RAM_ADDR = 0x00600000ULL;
     static constexpr uint64_t ACCEL_CONFIG_ADDR = 0x00000000ULL;
+    static constexpr uint64_t ACCEL_STATUS_ADDR = 0x00000018ULL;
     static constexpr uint64_t DISK_INPUT_ADDR = 0x00000000ULL;
     static constexpr uint64_t DISK_OUTPUT_ADDR = 0x01000000ULL;
 };
