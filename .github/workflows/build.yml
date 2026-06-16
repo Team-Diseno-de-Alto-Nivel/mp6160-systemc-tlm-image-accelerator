@@ -24,6 +24,11 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Generate test input image
+        run: |
+          mkdir -p images/input
+          [ -f images/input/imagen.raw ] || dd if=/dev/urandom of=images/input/imagen.raw bs=1 count=6220800
+
       - name: Build and run simulation
         run: |
           docker run --rm \
@@ -31,3 +36,12 @@ jobs:
             -w /workspace \
             systemc-tlm:ci \
             make run
+
+      - name: Upload images
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simulation-images
+          path: |
+            images/input/imagen.raw
+            images/output/salida.raw
