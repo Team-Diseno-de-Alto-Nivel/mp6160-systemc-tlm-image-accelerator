@@ -303,7 +303,7 @@ RAM total capacity: 64 MB (`0x00000000` – `0x03FFFFFF`).
 
 | Input (RGB) | Output (Grayscale) |
 |:-----------:|:------------------:|
-| ![Input RGB](https://github.com/Team-Diseno-de-Alto-Nivel/mp6160-systemc-tlm-image-accelerator/releases/download/simulation-results/imagen.jpg) | ![Output Grayscale](https://github.com/Team-Diseno-de-Alto-Nivel/mp6160-systemc-tlm-image-accelerator/releases/download/simulation-results/salida.jpg) |
+| ![Input RGB](https://github.com/Team-Diseno-de-Alto-Nivel/mp6160-systemc-tlm-image-accelerator/releases/download/simulation-results/image.jpg) | ![Output Grayscale](https://github.com/Team-Diseno-de-Alto-Nivel/mp6160-systemc-tlm-image-accelerator/releases/download/simulation-results/output.jpg) |
 
 ### Simulation log
 

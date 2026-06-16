@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Prepare images/input/imagen.raw for the simulation.
+"""Prepare images/input/image.raw for the simulation.
 
 Looks for an existing image (JPG, PNG, …) in images/input/.
 If one is found, converts it to RAW. Otherwise generates a synthetic
-1920×1080 RGB gradient and saves it as test.jpg + imagen.raw.
+1920×1080 RGB gradient and saves it as test.jpg + image.raw.
 
 Usage:
     python scripts/prepare_input.py [--width W] [--height H]
@@ -17,7 +17,7 @@ from PIL import Image
 
 SUPPORTED = {".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".webp"}
 INPUT_DIR = Path("images/input")
-OUTPUT_RAW = INPUT_DIR / "imagen.raw"
+OUTPUT_RAW = INPUT_DIR / "image.raw"
 
 
 def find_existing_image() -> Path | None:
