@@ -6,5 +6,10 @@ Disk::Disk(sc_core::sc_module_name name)
 }
 
 void Disk::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& delay) {
-    // TODO: implement filesystem read/write to images/input/ and images/output/
+    // MOCK: responde OK sin acceder al filesystem — implementacion real pendiente por el equipo de Disk.
+    // Sin imagen de entrada ni salida real hasta que este mock sea reemplazado.
+    std::cout << "[DISK] Transaccion recibida en 0x"
+              << std::hex << payload.get_address() << std::dec
+              << " (" << payload.get_data_length() << " bytes)" << std::endl;
+    payload.set_response_status(tlm::TLM_OK_RESPONSE);
 }
