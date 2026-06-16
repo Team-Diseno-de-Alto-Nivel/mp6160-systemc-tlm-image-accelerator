@@ -42,18 +42,10 @@ void RAM::b_transport(
     if (cmd == tlm::TLM_WRITE_COMMAND)
     {
         std::memcpy(&memory[addr], data, len);
-
-        std::ostringstream oss;
-        oss << "WRITE addr=0x" << std::hex << addr << std::dec << " len=" << len << " bytes";
-        Logger::info("RAM", oss.str());
     }
     else if (cmd == tlm::TLM_READ_COMMAND)
     {
         std::memcpy(data, &memory[addr], len);
-
-        std::ostringstream oss;
-        oss << "READ  addr=0x" << std::hex << addr << std::dec << " len=" << len << " bytes";
-        Logger::info("RAM", oss.str());
     }
     else
     {

@@ -16,8 +16,9 @@ _deps/
 *.raw
 *.bin
 
-# Allow input image for CI
+# Input and output images are project deliverables — keep them in the repo
 !images/input/*.raw
+!images/output/*.raw
 
 # macOS
 .DS_Store
