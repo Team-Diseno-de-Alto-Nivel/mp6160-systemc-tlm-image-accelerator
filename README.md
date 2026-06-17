@@ -4,8 +4,7 @@
 
 An electronic system-level model of an embedded platform that converts 1080p RAW RGB images to grayscale using **SystemC** and **TLM 2.0**.
 
-<!-- CI badge — replace owner/repo once the repository is on GitHub -->
-<!-- ![Build](https://github.com/<owner>/<repo>/actions/workflows/build.yml/badge.svg) -->
+![Build](https://github.com/Team-Diseno-de-Alto-Nivel/mp6160-systemc-tlm-image-accelerator/actions/workflows/build.yml/badge.svg)
 
 ---
 
@@ -87,15 +86,24 @@ Every pull request triggers a GitHub Actions workflow ([build.yml](.github/workf
 
 ```
 .
+├── .devcontainer/
+│   ├── Dockerfile                 # Linux image with SystemC pre-built
+│   └── devcontainer.json          # VS Code / Codespaces dev container config
 ├── .github/
 │   └── workflows/
-│       └── build.yml              # CI: compiles and runs on every pull request
+│       ├── build.yml              # CI: compiles and runs on every pull request
+│       └── results.yml            # CI: re-runs on push to main, publishes images + results.md as a release
 ├── docs/
 │   ├── CrearModuloSystemC.md      # Step-by-step guide for implementing a new module
 │   └── Enunciado.md               # Assignment specification (Spanish)
 ├── images/
 │   ├── input/                     # Input RAW RGB images (place here before running)
 │   └── output/                    # Grayscale output images (written here by sim)
+├── scripts/
+│   ├── prepare_input.py           # Converts/generates images/input/image.raw for the sim
+│   ├── raw_to_jpg.py              # Converts a headerless RAW file back to JPG/PNG for viewing
+│   ├── jpg_to_raw.py              # Converts a JPG/PNG into headerless RAW for the sim
+│   └── generate_results.py        # Extracts sim time, byte counts, and BT.601 pixel checks for CI
 ├── src/
 │   ├── modules/
 │   │   ├── accelerator/
@@ -140,10 +148,12 @@ classDiagram
     }
     class Bus {
         +tlm_target_socket target_socket
+        +tlm_target_socket target_socket_accel
         +tlm_initiator_socket init_socket_ram
         +tlm_initiator_socket init_socket_accel
         +tlm_initiator_socket init_socket_disk
         +b_transport() void
+        +b_transport_accel() void
     }
     class RAM {
         +tlm_target_socket target_socket
@@ -156,10 +166,12 @@ classDiagram
     }
     class Accelerator {
         +tlm_target_socket target_socket
+        +tlm_initiator_socket init_socket
         +b_transport() void
     }
 
-    CPU --> Bus : initiator
+    CPU --> Bus : initiator (target_socket)
+    Accelerator --> Bus : initiator (target_socket_accel)
     Bus --> RAM : target
     Bus --> Disk : target
     Bus --> Accelerator : target
@@ -187,11 +199,11 @@ graph LR
 
 ### CPU
 
-The CPU orchestrates the entire processing pipeline. It initiates all TLM transactions: loading the raw image from Disk into RAM, configuring the Accelerator with the source address, destination address, and pixel count, then fetching the processed image back from RAM and saving it to Disk. The CPU holds no image data locally — RAM is the only intermediate buffer.
+The CPU orchestrates the entire processing pipeline. It initiates all TLM transactions: loading the raw image from Disk into RAM, configuring the Accelerator with the source address, destination address, and pixel count, then polling the Accelerator's status register every 100 ns until processing is done, and finally fetching the processed image back from RAM and saving it to Disk. The CPU holds no image data locally — RAM is the only intermediate buffer.
 
 ### Bus
 
-The Bus acts as both TLM target (receiving transactions from the CPU and Accelerator) and TLM initiator (forwarding them to the correct peripheral). It decodes the transaction address and routes it to RAM (`0x00000000`–`0x03FFFFFF`), Accelerator (`0x10000000`), or Disk (`0x20000000`). All inter-module communication passes through the Bus.
+The Bus has two TLM target sockets: `target_socket`, for transactions coming from the CPU, and `target_socket_accel`, for transactions coming from the Accelerator. The CPU-facing socket decodes the address and routes it to RAM (`0x00000000`–`0x03FFFFFF`), Accelerator (`0x10000000`–`0x1FFFFFFF`), or Disk (`0x20000000`–`0x2FFFFFFF`); the Accelerator-facing socket only forwards to RAM, since the Accelerator only ever reads/writes pixel data there. All inter-module communication passes through the Bus.
 
 ### RAM
 
@@ -203,7 +215,7 @@ Models the persistent file system as a SystemC module. A TLM READ transaction ca
 
 ### Accelerator
 
-On receiving a 24-byte WRITE to its configuration register at `0x10000000`, the Accelerator reads the source RGB pixels from RAM, converts each pixel to grayscale, and writes the result back to RAM at the destination address. It uses the **BT.601 luminosity formula**:
+On receiving a 24-byte WRITE to its configuration register at `0x10000000`, the Accelerator spawns an asynchronous process (`sc_spawn`) that reads the source RGB pixels from RAM, converts each pixel to grayscale, and writes the result back to RAM at the destination address — the configuration WRITE itself returns immediately, it does not block until processing is done. While processing, a status register at `0x10000018` reads `0`; once the loop finishes, it's set to `1` so the polling CPU can proceed. It uses the **BT.601 luminosity formula**:
 
 ```
 Gray = 0.299 × R + 0.587 × G + 0.114 × B
@@ -242,13 +254,24 @@ sequenceDiagram
 
     CPU->>Bus: WRITE @ accel_cfg (src_addr=0x0, dst_addr=0x600000, pixels=2073600)
     Bus->>Accelerator: b_transport(WRITE, accel_cfg, 24 B)
+    Accelerator-->>CPU: TLM_OK_RESPONSE (processing spawned asynchronously)
 
-    loop per pixel / block
-        Accelerator->>Bus: READ @ ram_src
-        Bus->>RAM: b_transport(READ)
-        RAM-->>Accelerator: RGB bytes
-        Accelerator->>Bus: WRITE @ ram_dst (grayscale byte)
-        Bus->>RAM: b_transport(WRITE)
+    par Accelerator processes the image in the background
+        loop per pixel
+            Accelerator->>Bus: READ @ ram_src (via target_socket_accel)
+            Bus->>RAM: b_transport(READ)
+            RAM-->>Accelerator: RGB bytes
+            Accelerator->>Bus: WRITE @ ram_dst (grayscale byte)
+            Bus->>RAM: b_transport(WRITE)
+        end
+        Accelerator->>Accelerator: status_register = 1
+    and CPU polls for completion
+        loop until status == 1
+            CPU->>Bus: READ @ accel_status (0x10000018)
+            Bus->>Accelerator: b_transport(READ, accel_status, 4 B)
+            Accelerator-->>CPU: status (0 = busy, 1 = done)
+            Note over CPU: wait(100 ns) if status == 0
+        end
     end
 
     CPU->>Bus: READ @ 0x00600000 (fetch result)
@@ -283,6 +306,14 @@ When the CPU configures the Accelerator, it issues a single 24-byte WRITE to the
 | `+8` | 8 B | Destination base address in RAM (output grayscale) |
 | `+16` | 8 B | Total pixel count |
 
+### Accelerator status transaction
+
+The CPU does not block on the configuration WRITE — the Accelerator spawns the pixel-processing loop asynchronously (`sc_spawn`) and returns immediately. To know when processing finished, the CPU polls a 4-byte status register at `accel_base + 0x18` with a READ, waiting 100 ns between polls while the value is `0`:
+
+| Offset | Size | Field | Values |
+|---|---|---|---|
+| `+24` (`0x18`) | 4 B | Status register | `0` = processing, `1` = done |
+
 ---
 
 ## Memory Map
@@ -295,6 +326,7 @@ The Bus routes transactions based on address range.
 | Output grayscale image | `0x00600000` | 2,073,600 B (~1.9 MB) | RAM |
 | *(free RAM)* | `0x007F9C00` | ~56 MB remaining | RAM |
 | Accelerator config | `0x10000000` | 24 B | Accelerator |
+| Accelerator status | `0x10000018` | 4 B | Accelerator |
 | Disk | `0x20000000` | — | Disk |
 
 RAM total capacity: 64 MB (`0x00000000` – `0x03FFFFFF`).
@@ -303,7 +335,7 @@ RAM total capacity: 64 MB (`0x00000000` – `0x03FFFFFF`).
 
 ## Results
 
-> Images are generated automatically by CI on every push to `main` that touches `src/` or the input image.
+> Images and simulation data are generated automatically by CI ([results.yml](.github/workflows/results.yml)) on every push to `main` that touches `src/` or the input image, and published to the [`simulation-results` release](https://github.com/Team-Diseno-de-Alto-Nivel/mp6160-systemc-tlm-image-accelerator/releases/tag/simulation-results).
 
 ### Output image
 
@@ -313,33 +345,30 @@ RAM total capacity: 64 MB (`0x00000000` – `0x03FFFFFF`).
 
 ### Simulation log
 
-<!-- Paste the full output of ./build/sim here showing the 6-step flow:
-     load from Disk → store in RAM → configure Accelerator → process → fetch from RAM → save to Disk -->
+Full log, final `sc_time_stamp()`, byte counts, and a BT.601 conversion check on sample pixels (generated by [scripts/generate_results.py](scripts/generate_results.py)):
+
+📄 **[results.md](https://github.com/Team-Diseno-de-Alto-Nivel/mp6160-systemc-tlm-image-accelerator/releases/download/simulation-results/results.md)**
 
 ### Discussion
 
-**1. Is the output image visually correct?**
+The output image is visually correct: every feature visible in the RGB input — the mountain silhouettes, the sun, the lake and its reflection, the tree line, and the golden and blue vegetation in the foreground — remains clearly distinguishable in the grayscale output, with the expected relative tonal shifts. The blue-toned vegetation (high blue + green contribution) renders lighter than the golden vegetation (high red, low blue) of similar visual brightness, consistent with BT.601's channel weighting.
 
-<!-- Compare the grayscale output with the RGB input. Describe what you observe. -->
+Conversion correctness was checked at the pixel level rather than just by eye: `scripts/generate_results.py` samples 4 pixels from the actual committed `images/input/image.raw` / `images/output/output.raw` and recomputes BT.601 independently of the C++ implementation (`src/utils/conversion.h`). All 4 match exactly:
 
-**2. Conversion correctness**
+| Pixel # | RGB | Expected gray (BT.601) | Actual gray | Match |
+|---|---|---|---|---|
+| 0 | (139, 118, 209) | 135 | 135 | ✅ |
+| 518,400 | (192, 173, 205) | 182 | 182 | ✅ |
+| 1,036,800 | (59, 56, 47) | 56 | 56 | ✅ |
+| 2,073,599 | (45, 48, 101) | 53 | 53 | ✅ |
 
-<!-- Pick a known pixel from the input (e.g. RGB(100, 150, 200)) and verify the grayscale value
-     at the same position matches the BT.601 formula: 0.299×R + 0.587×G + 0.114×B. -->
+The full, per-run table is published in [results.md](https://github.com/Team-Diseno-de-Alto-Nivel/mp6160-systemc-tlm-image-accelerator/releases/download/simulation-results/results.md) on every push to `main`.
 
-**3. Simulation flow**
+The simulation log shows the CPU's 5 logged phases in order, each corresponding to one or more of the assignment's 6 conceptual steps: `[1/5] Loading image from disk` covers step 1 (CPU loads the image from persistent storage); `[2/5] Storing image in RAM` covers step 3 (CPU stores the image in RAM); `[3/5] Configuring accelerator` covers step 4 (CPU indicates src/dst/pixel count to the Accelerator); `[4/5] Processing image` covers step 5 (the Accelerator reads RGB, converts, and writes grayscale, while the CPU just polls its status register); and `[5/5] Saving result to disk` covers step 6 (CPU reads the processed image from RAM and writes it to disk). No deviations were observed — the order is fixed by the CPU's `run()` method, which executes these steps sequentially with no branching.
 
-<!-- Does the log show the 6 steps in the correct order? Describe any deviations. -->
+`sc_time_stamp()` reports **100 ns** when the simulation stops, and this does not reflect real execution time — the real run took on the order of milliseconds to a few seconds for the full 2,073,600-pixel image, depending on host CPU speed. The reason is that each `b_transport` call annotates a local delay (CPU 10 ns, Bus 5 ns, RAM 10 ns, Disk 100 ns), but none of these annotations are ever consumed with `wait()` — they're computed and then discarded. The only call that actually advances simulated time is the single `wait(100 ns)` inside `CPU::wait_accelerator_ready()`'s polling loop. This is a loosely-timed TLM model: functionally accurate (data moves correctly and in the right order) but not timing-accurate, since per-transaction delays are annotated without being honored.
 
-**4. Simulation time**
-
-<!-- What time did SystemC report at sc_time_stamp() when the simulation finished?
-     Does it reflect the real execution time? Why or why not? -->
-
-**5. Data volume**
-
-<!-- How many bytes did the system transfer in total (input 6,220,800 B + output 2,073,600 B)?
-     Does it match what is expected for a 1920×1080 image? -->
+The data volume matches the expected values exactly, by direct calculation from the image dimensions. For a 1920×1080 image, the pixel count is 1920 × 1080 = 2,073,600 pixels. The RGB input uses 3 bytes per pixel, so the expected input size is 2,073,600 × 3 = **6,220,800 B**, which is exactly what the system transfers from Disk into RAM. The grayscale output uses 1 byte per pixel, so the expected output size is 2,073,600 × 1 = **2,073,600 B**, which is exactly what the system transfers back from RAM into Disk. Total bytes moved through the system: 6,220,800 + 2,073,600 = **8,294,400 B**. These are real measured file sizes, not assumed constants — `scripts/generate_results.py` reads `images/input/image.raw` and `images/output/output.raw` directly and confirms the match on every CI run.
 
 ---
 
