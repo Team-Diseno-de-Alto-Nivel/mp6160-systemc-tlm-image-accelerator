@@ -99,7 +99,7 @@ make run
 
 ### CI / CD
 
-Every pull request triggers a GitHub Actions workflow ([build.yml](.github/workflows/build.yml)) that builds SystemC (cached), compiles the project, and runs `./build/sim`. To enforce this on `master`, enable branch protection and require the `build` check to pass before merging.
+Every pull request triggers a GitHub Actions workflow ([build.yml](.github/workflows/build.yml)) that builds SystemC (cached), compiles the project, runs `./build/sim`, regenerates the input/output JPGs, and commits the live results (images + the `<!-- RESULTS:* -->` tables in this README) back to the PR branch. To enforce this on `master`, enable branch protection and require the `build` check to pass before merging.
 
 ---
 
@@ -112,8 +112,7 @@ Every pull request triggers a GitHub Actions workflow ([build.yml](.github/workf
 │   └── devcontainer.json          # VS Code / Codespaces dev container config
 ├── .github/
 │   └── workflows/
-│       ├── build.yml              # CI: compiles and runs on every pull request
-│       └── results.yml            # CI: re-runs on push to main, publishes images + results.md as a release
+│       └── build.yml              # CI: compiles, runs, and commits live results/images on every pull request
 ├── docs/
 │   ├── CrearModuloSystemC.md      # Step-by-step guide for implementing a new module
 │   └── Enunciado.md               # Assignment specification (Spanish)
@@ -356,38 +355,40 @@ RAM total capacity: 64 MB (`0x00000000` – `0x03FFFFFF`).
 
 ## Results
 
-> Images and data below are regenerated automatically by CI ([results.yml](.github/workflows/results.yml)) on every push to `main` that touches `src/` or the input image. Full per-run console log: [results.md](https://github.com/Team-Diseno-de-Alto-Nivel/mp6160-systemc-tlm-image-accelerator/releases/download/simulation-results/results.md) (release asset — same numbers as below, plus the raw progress-bar output).
+> Images and the tables below are regenerated **and committed automatically** by CI ([build.yml](.github/workflows/build.yml)) on every pull request that touches `src/`, `scripts/`, or the input image — `scripts/generate_results.py` writes real measured values straight into this README between the `<!-- RESULTS:* -->` markers, so the numbers below are never hand-copied.
 
 ### Output image
 
 | Input (RGB) | Output (Grayscale) |
 |:-----------:|:------------------:|
-| ![Input RGB](https://github.com/Team-Diseno-de-Alto-Nivel/mp6160-systemc-tlm-image-accelerator/releases/download/simulation-results/image.jpg) | ![Output Grayscale](https://github.com/Team-Diseno-de-Alto-Nivel/mp6160-systemc-tlm-image-accelerator/releases/download/simulation-results/output.jpg) |
+| ![Input RGB](images/input/image.jpg) | ![Output Grayscale](images/output/output.jpg) |
 
 The output is visually correct because BT.601 weights each channel by human eye sensitivity (green 58.7%, red 29.9%, blue 11.4%): every feature from the input — mountains, sun, lake reflection, tree line, golden and blue vegetation — stays distinguishable, and the blue-toned vegetation (high blue+green) renders lighter than the similarly-bright golden vegetation (high red, low blue), as the weighting predicts.
 
 ### Data volume
 
-A 1920×1080 image has 2,073,600 pixels. RGB input is 3 B/pixel, grayscale output is 1 B/pixel, so the expected and actual byte counts are:
+A 1920×1080 image has 2,073,600 pixels. RGB input is 3 B/pixel, grayscale output is 1 B/pixel, so the expected byte counts are 2,073,600 × 3 = 6,220,800 B (Disk → RAM) and 2,073,600 × 1 = 2,073,600 B (RAM → Disk). `scripts/generate_results.py` reads `images/input/image.raw` / `images/output/output.raw` directly on every CI run and fills in the measured values below:
 
-| Transfer | Expected | Actual (measured from `images/input/image.raw` / `images/output/output.raw`) | Match |
+<!-- RESULTS:DATA-VOLUME:START -->
+| Transfer | Expected | Actual | Match |
 |---|---|---|---|
-| Disk → RAM (input) | 2,073,600 × 3 = 6,220,800 B | 6,220,800 B | ✅ |
-| RAM → Disk (output) | 2,073,600 × 1 = 2,073,600 B | 2,073,600 B | ✅ |
+| Disk → RAM (input) | 6,220,800 B | 6,220,800 B | ✅ |
+| RAM → Disk (output) | 2,073,600 B | 2,073,600 B | ✅ |
 | Total moved | 8,294,400 B | 8,294,400 B | ✅ |
-
-These are real file sizes, not assumed constants — `scripts/generate_results.py` reads both `.raw` files directly and checks the match on every CI run.
+<!-- RESULTS:DATA-VOLUME:END -->
 
 ### Pixel-level conversion check
 
-For 4 sampled pixels, `scripts/generate_results.py` recomputes BT.601 independently in Python from the input RGB and compares against what the C++ Accelerator (`src/utils/conversion.h`) actually wrote. All 4 match exactly, confirming correctness at the pixel level, not just by eye:
+On every CI run, `scripts/generate_results.py` samples 4 pixels, recomputes BT.601 independently in Python from the input RGB, and compares against what the C++ Accelerator (`src/utils/conversion.h`) actually wrote — confirming correctness at the pixel level, not just by eye:
 
+<!-- RESULTS:PIXELS:START -->
 | Pixel # | RGB | Expected gray (BT.601) | Actual gray | Match |
 |---|---|---|---|---|
 | 0 | (139, 118, 209) | 135 | 135 | ✅ |
 | 518,400 | (192, 173, 205) | 182 | 182 | ✅ |
 | 1,036,800 | (59, 56, 47) | 56 | 56 | ✅ |
 | 2,073,599 | (45, 48, 101) | 53 | 53 | ✅ |
+<!-- RESULTS:PIXELS:END -->
 
 ### Pipeline phases
 
@@ -405,7 +406,7 @@ Together these cover the assignment's full flow. The remaining requirement — t
 
 ### Simulated vs. wall-clock time
 
-`sc_time_stamp()` reports **100 ns** at stop, not real execution time (the real run takes milliseconds to a few seconds, depending on host CPU speed). Reason: every `b_transport` call annotates a local delay (CPU 10 ns, Bus 5 ns, RAM 10 ns, Disk 100 ns), but those annotations are never consumed with `wait()` — they're computed and discarded. The only call that actually advances simulated time is the single `wait(100 ns)` inside `CPU::wait_accelerator_ready()`'s polling loop. This is a loosely-timed TLM model: functionally accurate (data moves correctly and in order) but not timing-accurate.
+`sc_time_stamp()` reports <!-- RESULTS:SIMTIME:START -->**100 ns**<!-- RESULTS:SIMTIME:END --> at stop, which does not reflect real execution time (the real run takes milliseconds to a few seconds, depending on host CPU speed). Reason: every `b_transport` call annotates a local delay (CPU 10 ns, Bus 5 ns, RAM 10 ns, Disk 100 ns), but those annotations are never consumed with `wait()` — they're computed and discarded. The only call that actually advances simulated time is the single `wait(100 ns)` inside `CPU::wait_accelerator_ready()`'s polling loop. This is a loosely-timed TLM model: functionally accurate (data moves correctly and in order) but not timing-accurate.
 
 ---
 

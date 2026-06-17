@@ -3,9 +3,13 @@ name: Build
 on:
   pull_request:
 
+permissions:
+  contents: write
+
 jobs:
   changes:
     runs-on: ubuntu-latest
+    if: github.actor != 'github-actions[bot]'
     outputs:
       src: ${{ steps.filter.outputs.src }}
     steps:
@@ -21,6 +25,7 @@ jobs:
               - '.devcontainer/**'
               - 'scripts/**'
               - '.github/workflows/**'
+              - 'images/input/**'
 
   build:
     needs: changes
@@ -28,8 +33,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout PR branch
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -61,16 +68,25 @@ jobs:
             -v ${{ github.workspace }}:/workspace \
             -w /workspace \
             systemc-tlm:ci \
-            make run
+            make run | tee sim.log
+
+      - name: Convert RAW input → JPG
+        run: python scripts/raw_to_jpg.py images/input/image.raw images/input/image.jpg
 
       - name: Convert RAW output → JPG
         run: python scripts/raw_to_jpg.py images/output/output.raw images/output/output.jpg --gray
 
-      - name: Upload images
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: simulation-images
-          path: |
-            images/input/*.jpg
-            images/output/*.jpg
+      - name: Update README with live results
+        run: python scripts/generate_results.py sim.log --readme README.md
+
+      - name: Commit updated results to the PR branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add images/input/image.raw images/input/image.jpg images/output/output.raw images/output/output.jpg README.md
+          if git diff --cached --quiet; then
+            echo "No result changes to commit"
+          else
+            git commit -m "ci: update simulation results"
+            git push origin HEAD:${{ github.head_ref }}
+          fi
