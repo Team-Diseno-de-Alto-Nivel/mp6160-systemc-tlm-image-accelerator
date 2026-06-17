@@ -8,51 +8,30 @@ An electronic system-level model of an embedded platform that converts 1080p RAW
 
 ---
 
+## Table of Contents
+
+- [Requirements & Build Instructions](#requirements--build-instructions)
+- [Repository Organization](#repository-organization)
+- [Module Organization](#module-organization)
+- [Block Diagram](#block-diagram)
+- [Sequence Diagram](#sequence-diagram)
+- [Transaction Format](#transaction-format)
+- [Memory Map](#memory-map)
+- [Results](#results)
+- [AI-Assisted Development](#ai-assisted-development)
+
+---
+
 ## Requirements & Build Instructions
 
-### System prerequisites
+There are two ways to build this project:
 
-| Dependency | Minimum version | Notes |
-|---|---|---|
-| C++ compiler | GCC ≥ 9 or Clang ≥ 10 | Must support C++17 |
-| CMake | ≥ 3.16 | Used for both building and fetching SystemC |
-| Git | any | To clone the repository |
-| Internet access | — | Required on first build to download SystemC (skipped if `$SYSTEMC_HOME` is set) |
-
-**Linux (Ubuntu/Debian):**
-```bash
-sudo apt-get update
-sudo apt-get install -y build-essential cmake git
-```
-
-**macOS:**
-```bash
-xcode-select --install       # provides clang and make
-brew install cmake git
-```
-
-### Local Build
-
-```bash
-git clone <repository-url>
-cd <repository>
-make      # configure + download SystemC (first run ~1-2 min) + compile
-make run  # build and run the simulation
-make clean  # delete build directory
-```
-
-On the first run, CMake downloads and compiles SystemC 2.3.4 automatically. Subsequent builds use the cached version inside `build/`.
-
-If SystemC is already installed, set `$SYSTEMC_HOME` before running `make` to skip the download:
-
-```bash
-export SYSTEMC_HOME=/opt/systemc   # adjust to your install path
-make run
-```
+1. **[Development Container](#development-container) (recommended)** — Docker-based, every dependency (including a pre-compiled SystemC 2.3.4) is already installed inside the container, so the build is identical regardless of host OS. No local toolchain setup needed.
+2. **[Local Build](#local-build)** — install the [prerequisites](#system-prerequisites) directly on your machine and build with `make`.
 
 ### Development Container
 
-The repository ships a ready-to-use dev container that pre-installs all dependencies (including a compiled SystemC 2.3.4) so every team member gets an identical Linux build environment regardless of their host OS. This is the recommended alternative to a local build.
+The repository ships a ready-to-use dev container that pre-installs all dependencies (including a compiled SystemC 2.3.4), so anyone who clones it gets an identical Linux build environment regardless of their host OS.
 
 #### VS Code (recommended)
 
@@ -75,6 +54,48 @@ docker run -it --rm -v $(pwd):/workspace -w /workspace systemc-tlm make run
 #### GitHub Codespaces
 
 The same `devcontainer.json` works on [GitHub Codespaces](https://github.com/features/codespaces) — click **Code → Codespaces → Create codespace** for a cloud-hosted environment with no local install required.
+
+### Local Build
+
+#### System prerequisites
+
+| Dependency | Minimum version | Notes |
+|---|---|---|
+| C++ compiler | GCC ≥ 9 or Clang ≥ 10 | Must support C++17 |
+| CMake | ≥ 3.16 | Used for both building and fetching SystemC |
+| Git | any | To clone the repository |
+| Internet access | — | Required on first build to download SystemC (skipped if `$SYSTEMC_HOME` is set) |
+
+**Linux (Ubuntu/Debian):**
+```bash
+sudo apt-get update
+sudo apt-get install -y build-essential cmake git
+```
+
+**macOS:**
+```bash
+xcode-select --install       # provides clang and make
+brew install cmake git
+```
+
+#### Build
+
+```bash
+git clone <repository-url>
+cd <repository>
+make      # configure + download SystemC (first run ~1-2 min) + compile
+make run  # build and run the simulation
+make clean  # delete build directory
+```
+
+On the first run, CMake downloads and compiles SystemC 2.3.4 automatically. Subsequent builds use the cached version inside `build/`.
+
+If SystemC is already installed, set `$SYSTEMC_HOME` before running `make` to skip the download:
+
+```bash
+export SYSTEMC_HOME=/opt/systemc   # adjust to your install path
+make run
+```
 
 ### CI / CD
 
@@ -335,7 +356,7 @@ RAM total capacity: 64 MB (`0x00000000` – `0x03FFFFFF`).
 
 ## Results
 
-> Images and simulation data are generated automatically by CI ([results.yml](.github/workflows/results.yml)) on every push to `main` that touches `src/` or the input image, and published to the [`simulation-results` release](https://github.com/Team-Diseno-de-Alto-Nivel/mp6160-systemc-tlm-image-accelerator/releases/tag/simulation-results).
+> Images and data below are regenerated automatically by CI ([results.yml](.github/workflows/results.yml)) on every push to `main` that touches `src/` or the input image. Full per-run console log: [results.md](https://github.com/Team-Diseno-de-Alto-Nivel/mp6160-systemc-tlm-image-accelerator/releases/download/simulation-results/results.md) (release asset — same numbers as below, plus the raw progress-bar output).
 
 ### Output image
 
@@ -343,17 +364,23 @@ RAM total capacity: 64 MB (`0x00000000` – `0x03FFFFFF`).
 |:-----------:|:------------------:|
 | ![Input RGB](https://github.com/Team-Diseno-de-Alto-Nivel/mp6160-systemc-tlm-image-accelerator/releases/download/simulation-results/image.jpg) | ![Output Grayscale](https://github.com/Team-Diseno-de-Alto-Nivel/mp6160-systemc-tlm-image-accelerator/releases/download/simulation-results/output.jpg) |
 
-### Simulation log
+The output is visually correct because BT.601 weights each channel by human eye sensitivity (green 58.7%, red 29.9%, blue 11.4%): every feature from the input — mountains, sun, lake reflection, tree line, golden and blue vegetation — stays distinguishable, and the blue-toned vegetation (high blue+green) renders lighter than the similarly-bright golden vegetation (high red, low blue), as the weighting predicts.
 
-Full log, final `sc_time_stamp()`, byte counts, and a BT.601 conversion check on sample pixels (generated by [scripts/generate_results.py](scripts/generate_results.py)):
+### Data volume
 
-📄 **[results.md](https://github.com/Team-Diseno-de-Alto-Nivel/mp6160-systemc-tlm-image-accelerator/releases/download/simulation-results/results.md)**
+A 1920×1080 image has 2,073,600 pixels. RGB input is 3 B/pixel, grayscale output is 1 B/pixel, so the expected and actual byte counts are:
 
-### Discussion
+| Transfer | Expected | Actual (measured from `images/input/image.raw` / `images/output/output.raw`) | Match |
+|---|---|---|---|
+| Disk → RAM (input) | 2,073,600 × 3 = 6,220,800 B | 6,220,800 B | ✅ |
+| RAM → Disk (output) | 2,073,600 × 1 = 2,073,600 B | 2,073,600 B | ✅ |
+| Total moved | 8,294,400 B | 8,294,400 B | ✅ |
 
-The output image is visually correct: every feature visible in the RGB input — the mountain silhouettes, the sun, the lake and its reflection, the tree line, and the golden and blue vegetation in the foreground — remains clearly distinguishable in the grayscale output, with the expected relative tonal shifts. The blue-toned vegetation (high blue + green contribution) renders lighter than the golden vegetation (high red, low blue) of similar visual brightness, consistent with BT.601's channel weighting.
+These are real file sizes, not assumed constants — `scripts/generate_results.py` reads both `.raw` files directly and checks the match on every CI run.
 
-Conversion correctness was checked at the pixel level rather than just by eye: `scripts/generate_results.py` samples 4 pixels from the actual committed `images/input/image.raw` / `images/output/output.raw` and recomputes BT.601 independently of the C++ implementation (`src/utils/conversion.h`). All 4 match exactly:
+### Pixel-level conversion check
+
+For 4 sampled pixels, `scripts/generate_results.py` recomputes BT.601 independently in Python from the input RGB and compares against what the C++ Accelerator (`src/utils/conversion.h`) actually wrote. All 4 match exactly, confirming correctness at the pixel level, not just by eye:
 
 | Pixel # | RGB | Expected gray (BT.601) | Actual gray | Match |
 |---|---|---|---|---|
@@ -362,13 +389,23 @@ Conversion correctness was checked at the pixel level rather than just by eye: `
 | 1,036,800 | (59, 56, 47) | 56 | 56 | ✅ |
 | 2,073,599 | (45, 48, 101) | 53 | 53 | ✅ |
 
-The full, per-run table is published in [results.md](https://github.com/Team-Diseno-de-Alto-Nivel/mp6160-systemc-tlm-image-accelerator/releases/download/simulation-results/results.md) on every push to `main`.
+### Pipeline phases
 
-The simulation log shows the CPU's 5 logged phases in order, each corresponding to one or more of the assignment's 6 conceptual steps: `[1/5] Loading image from disk` covers step 1 (CPU loads the image from persistent storage); `[2/5] Storing image in RAM` covers step 3 (CPU stores the image in RAM); `[3/5] Configuring accelerator` covers step 4 (CPU indicates src/dst/pixel count to the Accelerator); `[4/5] Processing image` covers step 5 (the Accelerator reads RGB, converts, and writes grayscale, while the CPU just polls its status register); and `[5/5] Saving result to disk` covers step 6 (CPU reads the processed image from RAM and writes it to disk). No deviations were observed — the order is fixed by the CPU's `run()` method, which executes these steps sequentially with no branching.
+The CPU logs 5 phases, in a fixed order with no branching (`CPU::run()` executes them sequentially):
 
-`sc_time_stamp()` reports **100 ns** when the simulation stops, and this does not reflect real execution time — the real run took on the order of milliseconds to a few seconds for the full 2,073,600-pixel image, depending on host CPU speed. The reason is that each `b_transport` call annotates a local delay (CPU 10 ns, Bus 5 ns, RAM 10 ns, Disk 100 ns), but none of these annotations are ever consumed with `wait()` — they're computed and then discarded. The only call that actually advances simulated time is the single `wait(100 ns)` inside `CPU::wait_accelerator_ready()`'s polling loop. This is a loosely-timed TLM model: functionally accurate (data moves correctly and in the right order) but not timing-accurate, since per-transaction delays are annotated without being honored.
+| CPU log | Action |
+|---|---|
+| `[1/5] Loading image from disk` | CPU reads the RAW RGB image from persistent storage (Disk) |
+| `[2/5] Storing image in RAM` | CPU writes the loaded image into RAM |
+| `[3/5] Configuring accelerator` | CPU sends source address, destination address, and pixel count to the Accelerator |
+| `[4/5] Processing image` | Accelerator reads RGB from RAM, converts to grayscale, writes the result back to RAM — CPU only polls the status register |
+| `[5/5] Saving result to disk` | CPU reads the processed image from RAM and writes it to Disk |
 
-The data volume matches the expected values exactly, by direct calculation from the image dimensions. For a 1920×1080 image, the pixel count is 1920 × 1080 = 2,073,600 pixels. The RGB input uses 3 bytes per pixel, so the expected input size is 2,073,600 × 3 = **6,220,800 B**, which is exactly what the system transfers from Disk into RAM. The grayscale output uses 1 byte per pixel, so the expected output size is 2,073,600 × 1 = **2,073,600 B**, which is exactly what the system transfers back from RAM into Disk. Total bytes moved through the system: 6,220,800 + 2,073,600 = **8,294,400 B**. These are real measured file sizes, not assumed constants — `scripts/generate_results.py` reads `images/input/image.raw` and `images/output/output.raw` directly and confirms the match on every CI run.
+Together these cover the assignment's full flow. The remaining requirement — that the input image be RAW RGB at 1080p — is a precondition on the file in `images/input/`, not a runtime action, so it has no corresponding phase.
+
+### Simulated vs. wall-clock time
+
+`sc_time_stamp()` reports **100 ns** at stop, not real execution time (the real run takes milliseconds to a few seconds, depending on host CPU speed). Reason: every `b_transport` call annotates a local delay (CPU 10 ns, Bus 5 ns, RAM 10 ns, Disk 100 ns), but those annotations are never consumed with `wait()` — they're computed and discarded. The only call that actually advances simulated time is the single `wait(100 ns)` inside `CPU::wait_accelerator_ready()`'s polling loop. This is a loosely-timed TLM model: functionally accurate (data moves correctly and in order) but not timing-accurate.
 
 ---
 

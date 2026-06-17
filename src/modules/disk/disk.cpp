@@ -3,7 +3,7 @@
 #include <fstream>
 #include <iostream>
 #include <cstring>
-#include <sys/stat.h>   // for directory creation
+#include <filesystem>
 
 Disk::Disk(sc_core::sc_module_name name)
     : sc_module(name) {
@@ -51,8 +51,7 @@ void Disk::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& dela
         // CPU requests processed image write to disk
         if (addr == DISK_OUTPUT_ADDR) {
             // Create output directory if it does not exist
-            mkdir("images",        0755);
-            mkdir("images/output", 0755);
+            std::filesystem::create_directories("images/output");
 
             std::ofstream file(OUTPUT_PATH, std::ios::binary);
 
@@ -63,6 +62,12 @@ void Disk::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& dela
             }
 
             file.write(reinterpret_cast<char*>(ptr), len);
+
+            if (!file) {
+                SC_REPORT_ERROR("Disk", "Error writing output image");
+                payload.set_response_status(tlm::TLM_GENERIC_ERROR_RESPONSE);
+                return;
+            }
 
             std::cout << sc_core::sc_time_stamp()
                       << " Disk: wrote " << len

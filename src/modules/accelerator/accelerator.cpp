@@ -68,18 +68,6 @@ void Accelerator::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_tim
 
 void Accelerator::write_status_register(uint32_t status) {
     status_register = status;
-
-    unsigned char status_data[4];
-    *reinterpret_cast<uint32_t*>(status_data) = status;
-
-    tlm::tlm_generic_payload write_payload;
-    write_payload.set_command(tlm::TLM_WRITE_COMMAND);
-    write_payload.set_address(STATUS_ADDR);
-    write_payload.set_data_ptr(status_data);
-    write_payload.set_data_length(sizeof(uint32_t));
-    sc_core::sc_time delay = sc_core::sc_time(10, sc_core::SC_NS);
-    init_socket->b_transport(write_payload, delay);
-
 }
 
 void Accelerator::process_image(uint64_t src_addr, uint64_t dst_addr, uint64_t pixel_count) {
