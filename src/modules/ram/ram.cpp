@@ -5,7 +5,7 @@
 #include <iomanip>
 #include <string>
 
-#include "utils/logger.h"
+#include "infra/logger.h"
 
 RAM::RAM(sc_core::sc_module_name name)
     : sc_module(name),

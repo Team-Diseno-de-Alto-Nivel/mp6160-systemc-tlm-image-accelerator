@@ -3,7 +3,7 @@
 #include <systemc>
 #include <tlm>
 #include <tlm_utils/simple_target_socket.h>
-#include "../utils/memory_map.h"
+#include "../../config/memory_map.h"
 
 SC_MODULE(Disk) {
 public:

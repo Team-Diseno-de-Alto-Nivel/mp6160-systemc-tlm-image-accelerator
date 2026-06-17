@@ -5,7 +5,7 @@
 #include <tlm_utils/simple_target_socket.h>
 #include <tlm_utils/simple_initiator_socket.h>
 #include <cstdint>
-#include "../utils/memory_map.h"
+#include "../../config/memory_map.h"
 
 SC_MODULE(Accelerator)
 {

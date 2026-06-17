@@ -1,10 +1,10 @@
 #include <systemc>
 
-#include "cpu/cpu.h"
-#include "bus/bus.h"
-#include "ram/ram.h"
-#include "disk/disk.h"
-#include "accelerator/accelerator.h"
+#include "modules/cpu/cpu.h"
+#include "modules/bus/bus.h"
+#include "modules/ram/ram.h"
+#include "modules/disk/disk.h"
+#include "modules/accelerator/accelerator.h"
 
 int sc_main(int argc, char* argv[])
 {

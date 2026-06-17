@@ -23,7 +23,8 @@ make run  # build and run the simulation
 
 ## Coding conventions
 
-- One `.h` + `.cpp` pair per module under `src/<module>/`
+- One `.h` + `.cpp` pair per module under `src/modules/<module>/`
+- Shared address/config constants under `src/config/`; pure non-SystemC helpers under `src/utils/`; cross-cutting infra (logging) under `src/infra/`
 - `#pragma once` in all headers, C++17
 - `SC_THREAD` for all module processes
 - Initiator sockets on CPU and Bus upstream; target sockets on RAM, Disk, Accelerator, and Bus downstream

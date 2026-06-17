@@ -1,6 +1,6 @@
 #include "accelerator.h"
-#include "../utils/conversion.h"
-#include "../utils/logger.h"
+#include "../../utils/conversion.h"
+#include "../../infra/logger.h"
 #include <iomanip>
 #include <sstream>
 

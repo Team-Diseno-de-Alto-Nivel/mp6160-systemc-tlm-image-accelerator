@@ -97,24 +97,30 @@ Every pull request triggers a GitHub Actions workflow ([build.yml](.github/workf
 │   ├── input/                     # Input RAW RGB images (place here before running)
 │   └── output/                    # Grayscale output images (written here by sim)
 ├── src/
-│   ├── accelerator/
-│   │   ├── accelerator.h
-│   │   └── accelerator.cpp
-│   ├── bus/
-│   │   ├── bus.h
-│   │   └── bus.cpp
-│   ├── cpu/
-│   │   ├── cpu.h
-│   │   └── cpu.cpp
-│   ├── disk/
-│   │   ├── disk.h
-│   │   └── disk.cpp
-│   ├── ram/
-│   │   ├── ram.h
-│   │   └── ram.cpp
+│   ├── modules/
+│   │   ├── accelerator/
+│   │   │   ├── accelerator.h
+│   │   │   └── accelerator.cpp
+│   │   ├── bus/
+│   │   │   ├── bus.h
+│   │   │   └── bus.cpp
+│   │   ├── cpu/
+│   │   │   ├── cpu.h
+│   │   │   └── cpu.cpp
+│   │   ├── disk/
+│   │   │   ├── disk.h
+│   │   │   └── disk.cpp
+│   │   └── ram/
+│   │       ├── ram.h
+│   │       └── ram.cpp
+│   ├── config/
+│   │   ├── memory_map.h           # Bus address map constants
+│   │   └── image_config.h         # Image dimension constants
 │   ├── utils/
 │   │   └── conversion.h           # Pure BT.601 helper (no SystemC dependency)
-│   └── main.cpp                   # sc_main — top-level instantiation and sc_start()
+│   ├── infra/
+│   │   └── logger.h               # Centralized console logging
+│   └── sc_main.cpp                # sc_main — top-level instantiation and sc_start()
 ├── AGENTS.md                      # AI assistant instructions
 ├── CMakeLists.txt                 # Build system; auto-fetches SystemC if needed
 ├── CLAUDE.md                      # Context file for Claude Code
@@ -161,11 +167,11 @@ classDiagram
 
 | Module | File(s) | TLM role | Responsibility |
 |---|---|---|---|
-| **CPU** | `src/cpu/` | Initiator | Orchestrates the full flow: load → store → configure → fetch → save |
-| **Bus** | `src/bus/` | Target + Initiator | Routes transactions to the correct target by address range |
-| **RAM** | `src/ram/` | Target | 64 MB byte-addressable memory; holds input RGB and output grayscale |
-| **Disk** | `src/disk/` | Target | Maps READ/WRITE transactions to local filesystem file I/O |
-| **Accelerator** | `src/accelerator/` | Target | On WRITE to config registers, reads RGB from RAM and writes grayscale back |
+| **CPU** | `src/modules/cpu/` | Initiator | Orchestrates the full flow: load → store → configure → fetch → save |
+| **Bus** | `src/modules/bus/` | Target + Initiator | Routes transactions to the correct target by address range |
+| **RAM** | `src/modules/ram/` | Target | 64 MB byte-addressable memory; holds input RGB and output grayscale |
+| **Disk** | `src/modules/disk/` | Target | Maps READ/WRITE transactions to local filesystem file I/O |
+| **Accelerator** | `src/modules/accelerator/` | Target | On WRITE to config registers, reads RGB from RAM and writes grayscale back |
 
 ---
 

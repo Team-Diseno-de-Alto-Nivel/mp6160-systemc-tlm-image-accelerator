@@ -1,5 +1,5 @@
 #include "bus.h"
-#include "../utils/memory_map.h"
+#include "../../config/memory_map.h"
 
 Bus::Bus(sc_core::sc_module_name name)
     : sc_module(name) {
