@@ -1,5 +1,5 @@
 #include "cpu.h"
-#include "../utils/logger.h"
+#include "../../infra/logger.h"
 
 CPU::CPU(sc_core::sc_module_name name,
          uint64_t disk_base_addr,

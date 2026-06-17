@@ -9,7 +9,7 @@ Esta guía te enseña paso a paso cómo implementar la lógica de un módulo Sys
 Cada módulo ya tiene su carpeta y archivos stub bajo `src/`:
 
 ```
-src/<nombre_modulo>/
+src/modules/<nombre_modulo>/
 ├── <nombre_modulo>.h      # Header — define sockets, constructor y métodos privados
 └── <nombre_modulo>.cpp    # Implementación — completar b_transport() y la lógica
 
@@ -21,11 +21,11 @@ src/utils/
 
 | Módulo | Carpeta | Estado |
 |---|---|---|
-| CPU | `src/cpu/` | stub — implementar `run()` |
-| Bus | `src/bus/` | stub — implementar routing en `b_transport()` |
-| RAM | `src/ram/` | stub — implementar read/write en `b_transport()` |
-| Disk | `src/disk/` | stub — implementar I/O de archivo en `b_transport()` |
-| Accelerator | `src/accelerator/` | **implementado** — usar como referencia |
+| CPU | `src/modules/cpu/` | stub — implementar `run()` |
+| Bus | `src/modules/bus/` | stub — implementar routing en `b_transport()` |
+| RAM | `src/modules/ram/` | stub — implementar read/write en `b_transport()` |
+| Disk | `src/modules/disk/` | stub — implementar I/O de archivo en `b_transport()` |
+| Accelerator | `src/modules/accelerator/` | **implementado** — usar como referencia |
 
 ---
 
@@ -33,7 +33,7 @@ src/utils/
 
 El header define la **interfaz pública** del módulo: sockets TLM, constructor, y declaraciones de métodos privados.
 
-**Archivo:** `src/<nombre_modulo>/<nombre_modulo>.h`
+**Archivo:** `src/modules/<nombre_modulo>/<nombre_modulo>.h`
 
 ### Plantilla:
 
@@ -70,7 +70,7 @@ private:
 | `init_socket` | Initiator (salida) | Envía transacciones a otros módulos |
 | `b_transport()` | Callback | Se ejecuta cuando llega una transacción |
 
-**Referencia real — ver [`src/accelerator/accelerator.h`](../src/accelerator/accelerator.h):**
+**Referencia real — ver [`src/modules/accelerator/accelerator.h`](../src/modules/accelerator/accelerator.h):**
 
 ```cpp
 SC_MODULE(Accelerator) {
@@ -97,7 +97,7 @@ private:
 
 El `.cpp` contiene la lógica real del módulo. El stub ya tiene el constructor y la firma de `b_transport()` — hay que completar el cuerpo.
 
-**Archivo:** `src/<nombre_modulo>/<nombre_modulo>.cpp`
+**Archivo:** `src/modules/<nombre_modulo>/<nombre_modulo>.cpp`
 
 ### Patrón general:
 
@@ -170,7 +170,7 @@ payload.set_data_length(24);                   // bytes a transferir
 init_socket->b_transport(payload, delay);
 ```
 
-**Referencia real — ver [`src/accelerator/accelerator.cpp`](../src/accelerator/accelerator.cpp)**
+**Referencia real — ver [`src/modules/accelerator/accelerator.cpp`](../src/modules/accelerator/accelerator.cpp)**
 
 ---
 
@@ -219,7 +219,7 @@ for (uint64_t i = 0; i < total; ++i) {
 SC_REPORT_INFO(name(), "Procesamiento completo");
 ```
 
-**Referencia real — ver [`src/accelerator/accelerator.cpp`](../src/accelerator/accelerator.cpp)**
+**Referencia real — ver [`src/modules/accelerator/accelerator.cpp`](../src/modules/accelerator/accelerator.cpp)**
 
 ---
 
@@ -261,12 +261,12 @@ El `.cpp` de tu módulo debe estar en el bloque `add_executable(sim ...)`.
 
 ```cmake
 add_executable(sim
-    src/main.cpp
-    src/cpu/cpu.cpp
-    src/bus/bus.cpp
-    src/ram/ram.cpp
-    src/disk/disk.cpp
-    src/accelerator/accelerator.cpp
+    src/sc_main.cpp
+    src/modules/cpu/cpu.cpp
+    src/modules/bus/bus.cpp
+    src/modules/ram/ram.cpp
+    src/modules/disk/disk.cpp
+    src/modules/accelerator/accelerator.cpp
     # si agregás un módulo nuevo, añadí su .cpp aquí
 )
 ```
@@ -275,9 +275,9 @@ add_executable(sim
 
 ## Paso 6: Verificar main.cpp
 
-Todos los módulos ya están instanciados y conectados en `src/main.cpp`. Al implementar la lógica de un módulo no es necesario modificar este archivo, salvo que se agregue un módulo completamente nuevo.
+Todos los módulos ya están instanciados y conectados en `src/sc_main.cpp`. Al implementar la lógica de un módulo no es necesario modificar este archivo, salvo que se agregue un módulo completamente nuevo.
 
-**Referencia — ver [`src/main.cpp`](../src/main.cpp):**
+**Referencia — ver [`src/sc_main.cpp`](../src/sc_main.cpp):**
 
 ```cpp
 cpu.init_socket.bind(bus.target_socket);
@@ -318,7 +318,7 @@ El Bus usa estas direcciones para **enrutar transacciones**. Tiene **dos target 
 - `target_socket` — recibe transacciones del CPU → enruta por address range
 - `target_socket_accel` — recibe transacciones del Accelerator → siempre va a RAM
 
-Implementar en `src/bus/bus.cpp`:
+Implementar en `src/modules/bus/bus.cpp`:
 
 ```cpp
 void Bus::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& delay) {
@@ -363,7 +363,7 @@ Reflejar los sockets públicos reales y los métodos que forman parte de la inte
 
 | Module | File(s) | TLM role | Responsibility |
 |---|---|---|---|
-| **MiModulo** | `src/<nombre_modulo>/` | Target / Initiator | Descripción concisa de su responsabilidad |
+| **MiModulo** | `src/modules/<nombre_modulo>/` | Target / Initiator | Descripción concisa de su responsabilidad |
 
 ### Resultados — actualizar al finalizar la implementación completa:
 
@@ -390,13 +390,13 @@ Documentar el formato de la transacción WRITE en el header del módulo:
 ## Checklist: Resumen Completo
 
 ```
-✓ Paso 1: Ubicar archivos en src/<nombre_modulo>/
+✓ Paso 1: Ubicar archivos en src/modules/<nombre_modulo>/
 ✓ Paso 2: Implementar header <nombre_modulo>.h con sockets y constructor
 ✓ Paso 3: Implementar <nombre_modulo>.cpp con b_transport() y lógica
 ✓ Paso 3b: Agregar SC_REPORT_INFO en los puntos clave del módulo
 ✓ Paso 4: (Opcional) Implementar conversion.h para lógica sin SystemC
 ✓ Paso 5: Verificar CMakeLists.txt incluye <nombre_modulo>.cpp
-✓ Paso 6: Verificar conexiones en src/main.cpp
+✓ Paso 6: Verificar conexiones en src/sc_main.cpp
 ✓ Paso 7: Actualizar README.md — Memory Map
 ✓ Paso 8: Actualizar README.md — Module Organization + Results
 ✓ Paso 9: Documentar formato de configuración en header
@@ -417,4 +417,4 @@ make run  # ejecuta la simulación
 
 - [SystemC Documentation](https://accellera.org/activities/systemc/)
 - [TLM 2.0 Specification](https://accellera.org/activities/tlm/)
-- Módulo implementado de referencia: [`src/accelerator/`](../src/accelerator/)
+- Módulo implementado de referencia: [`src/modules/accelerator/`](../src/modules/accelerator/)

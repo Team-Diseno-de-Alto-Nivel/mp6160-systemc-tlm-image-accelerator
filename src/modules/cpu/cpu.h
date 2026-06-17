@@ -4,8 +4,8 @@
 #include <tlm>
 #include <tlm_utils/simple_initiator_socket.h>
 #include <vector>
-#include "../utils/memory_map.h"
-#include "../utils/image_config.h"
+#include "../../config/memory_map.h"
+#include "../../config/image_config.h"
 
 class CPU : public sc_core::sc_module {
 public:
