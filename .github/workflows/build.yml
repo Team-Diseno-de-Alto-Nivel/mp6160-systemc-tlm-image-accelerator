@@ -70,9 +70,6 @@ jobs:
             systemc-tlm:ci \
             make run | tee sim.log
 
-      - name: Convert RAW input → JPG
-        run: python scripts/raw_to_jpg.py images/input/image.raw images/input/image.jpg
-
       - name: Convert RAW output → JPG
         run: python scripts/raw_to_jpg.py images/output/output.raw images/output/output.jpg --gray
 
@@ -83,7 +80,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add images/input/image.raw images/input/image.jpg images/output/output.raw images/output/output.jpg README.md
+          git add images/input/image.raw images/output/output.raw images/output/output.jpg README.md
           if git diff --cached --quiet; then
             echo "No result changes to commit"
           else

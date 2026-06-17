@@ -4,8 +4,6 @@
 
 An electronic system-level model of an embedded platform that converts 1080p RAW RGB images to grayscale using **SystemC** and **TLM 2.0**.
 
-![Build](https://github.com/Team-Diseno-de-Alto-Nivel/mp6160-systemc-tlm-image-accelerator/actions/workflows/build.yml/badge.svg)
-
 ---
 
 ## Table of Contents
