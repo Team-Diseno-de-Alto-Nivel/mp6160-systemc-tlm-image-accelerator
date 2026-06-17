@@ -51,10 +51,13 @@ jobs:
             -v ${{ github.workspace }}:/workspace \
             -w /workspace \
             systemc-tlm:ci \
-            make run
+            make run | tee sim.log
 
       - name: Convert RAW output → JPG
         run: python scripts/raw_to_jpg.py images/output/output.raw images/output/output.jpg --gray
+
+      - name: Generate results data
+        run: python scripts/generate_results.py sim.log --output results.md
 
       - name: Publish results as GitHub Release
         env:
@@ -66,4 +69,5 @@ jobs:
             --notes "Auto-updated by CI on every push to main that touches src/." \
             --latest=false \
             images/input/image.jpg#"Input RGB (1920×1080)" \
-            images/output/output.jpg#"Output Grayscale (1920×1080)"
+            images/output/output.jpg#"Output Grayscale (1920×1080)" \
+            results.md#"Simulation log & BT.601 verification data"
